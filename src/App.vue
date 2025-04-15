@@ -1,13 +1,26 @@
 <template>
   <div id="app">
-    <nav>
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
-    </nav>
-    <router-view />
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <el-row>
+      <el-col :span="3">
+        <nav-menu></nav-menu>
+      </el-col>
+      <el-col :span="21">
+        <router-view :key="this.$route.paths"></router-view>
+      </el-col>
+    </el-row>
   </div>
 </template>
 
+<script>
+import NavMenu from "./components/NavMenu.vue";
+export default {
+  name: "App",
+  components: {
+    NavMenu,
+  },
+};
+</script>
 <style>
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
@@ -28,5 +41,14 @@ nav a {
 
 nav a.router-link-exact-active {
   color: #42b983;
+}
+
+.bg-purple {
+  background: #d3dce6;
+}
+
+.grid-content {
+  border-radius: 4px;
+  min-height: 36px;
 }
 </style>

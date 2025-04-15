@@ -1,23 +1,26 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
-import HomeView from "../views/HomeView.vue";
+import MapView from "../views/MapView.vue";
+import AdminPanel from "../views/AdminPanel.vue";
 
 Vue.use(VueRouter);
 
 const routes = [
   {
-    path: "/",
-    name: "home",
-    component: HomeView,
+    path: "/map",
+    name: "Map",
+    component: MapView,
+    // meta: { requiresAuth: true }
   },
   {
-    path: "/about",
-    name: "about",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () =>
-      import(/* webpackChunkName: "about" */ "../views/AboutView.vue"),
+    path: "/",
+    redirect: "/map",
+  },
+  {
+    path: "/admin",
+    name: "Admin",
+    component: AdminPanel,
+    // meta: { requiresAuth: true, requiresAdmin: true }
   },
 ];
 
