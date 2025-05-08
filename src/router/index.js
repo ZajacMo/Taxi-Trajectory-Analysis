@@ -1,26 +1,22 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
-import MapView from "../views/MapView.vue";
-import AdminPanel from "../views/AdminPanel.vue";
+import AreaSearchDialog from "@/components/AreaSearchDialog.vue";
 
 Vue.use(VueRouter);
 
 const routes = [
   {
-    path: "/map",
-    name: "Map",
-    component: MapView,
-    // meta: { requiresAuth: true }
-  },
-  {
     path: "/",
-    redirect: "/map",
+    name: "Map",
   },
   {
-    path: "/admin",
-    name: "Admin",
-    component: AdminPanel,
-    // meta: { requiresAuth: true, requiresAdmin: true }
+    path: "/statistics",
+    name: "AreaStatistics",
+    component: AreaSearchDialog,
+  },
+  {
+    path: "*",
+    redirect: "/",
   },
 ];
 

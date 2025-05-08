@@ -1,17 +1,6 @@
 <template>
   <div class="map-container">
     <map-container ref="mapInstance" @ready="initMapOverlays" />
-    <!-- 路径规划控件 -->
-    <!-- <div class="path-controls">
-      <select v-model="transportType">
-        <option value="walk">步行</option>
-        <option value="bike">自行车</option>
-        <option value="shuttle">校车</option>
-      </select>
-      <button @click="calculatePath">计算路径</button>
-    </div> -->
-
-    <!-- 节点渲染 -->
     <g
       v-for="node in nodes"
       :key="node.id"
@@ -31,6 +20,12 @@ import MapContainer from "@/components/MapContainer";
 export default {
   components: {
     MapContainer,
+  },
+  props: {
+    selectedRoutes: {
+      type: Array,
+      default: () => [],
+    },
   },
   data() {
     return {
@@ -74,6 +69,24 @@ export default {
       } catch (error) {
         console.error("路径计算失败:", error);
       }
+    },
+  },
+  watch: {
+    selectedRoutes: {
+      async handler(newRoutes, oldRoutes) {
+        if (newRoutes.length !== oldRoutes.length) {
+          // 向后端发送选中路线数据
+          try {
+            // 确保axios实例已正确导入和配置
+            await this.$http.post("/api", {
+              routes: newRoutes,
+            });
+          } catch (error) {
+            console.error("发送路线数据失败:", error);
+          }
+        }
+      },
+      deep: true,
     },
   },
 };
