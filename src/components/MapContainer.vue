@@ -27,8 +27,6 @@ export default {
     loadMap() {
       // 创建并加载所需的脚本
       const scripts = [
-        { src: `https://map.qq.com/api/gljs?v=1.exp&key=U3EBZ-4MQ6T-F3FX5-LVNPW-RYHNQ-FIB6V&libraries=visualization`, target: 'head' },
-        { src: 'https://map.qq.com/api/gljs?v=1.exp&key=U3EBZ-4MQ6T-F3FX5-LVNPW-RYHNQ-FIB6V', target: 'head' },
         { src: 'https://mapapi.qq.com/web/lbs/visualizationApi/demo/data/trail.js', target: 'head', onload: () => this.drawMap() }
       ];
       scripts.forEach(({ src, target, onload }) => {
@@ -43,7 +41,7 @@ export default {
       this.map = new TMap.Map("container", {
         center: new TMap.LatLng(this.initCenter.lng, this.initCenter.lat),
         zoom: this.zoomLevel,
-        mapStyleId: "style2",
+        mapStyleId: "style4",
         baseMap:{
           type: "vector",
           features:["base","building3d"],
@@ -66,9 +64,8 @@ export default {
           showDuration: 120, //动画中轨迹点高亮的持续时间
           playRate: 70, // 动画播放倍速
           enableHighlightPoint: true, //是否显示头部高亮点
-      }).addTo(this.map); // 通过addTo()添加到指定地图实例
-      // 轨迹点数据
-      this.trail.setData(trailData);
+      }).addTo(this.map) // 通过addTo()添加到指定地图实例
+      .setData(trailData);   // 轨迹点数据
     }
   },
 };

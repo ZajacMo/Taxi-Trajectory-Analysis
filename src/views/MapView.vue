@@ -78,7 +78,7 @@ export default {
           // 向后端发送选中路线数据
           try {
             // 确保axios实例已正确导入和配置
-            await this.$http.post("/api", {
+            await this.$http.post("/api/trails", {
               routes: newRoutes,
             });
           } catch (error) {

@@ -7,7 +7,8 @@ import "element-ui/lib/theme-chalk/index.css";
 import TlbsMap from "tlbs-map-vue";
 import axios from "axios";
 
-Vue.config.productionTip = false;
+// axios.defaults.baseURL = "http://localhost:3000/trails";
+// Vue.config.productionTip = false;
 Vue.use(ElementUI).use(TlbsMap);
 Vue.prototype.$http = axios;
 new Vue({
