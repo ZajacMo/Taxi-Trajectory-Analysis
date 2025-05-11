@@ -6,6 +6,10 @@
 export default {
   name: "MapContainer",
   props: {
+    selectedID:{
+      type:Array,
+      default:()=>[],
+    }
   },
 
   data() {
@@ -21,22 +25,54 @@ export default {
     };
   },
   mounted() {
-    this.loadMap();
+    // this.loadMap();
+    this.drawMap();
+  },
+  watch: {
+    selectedID: {
+      async handler(newRoutes, oldRoutes) {
+        if (newRoutes.length !== oldRoutes.length) {
+          // 向后端发送选中路线数据
+          try {
+            // 确保axios实例已正确导入和配置
+            const response = await fetch("/api/trails", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify({
+                taxi_ids: newRoutes,
+              }),
+            });
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            this.trail.setData(data);
+          } catch (error) {
+            console.error("发送路线数据失败:", error);
+          }
+
+        }
+      },
+      deep: true,
+    },
   },
   methods: {
-    loadMap() {
-      // 创建并加载所需的脚本
-      const scripts = [
-        { src: 'https://mapapi.qq.com/web/lbs/visualizationApi/demo/data/trail.js', target: 'head', onload: () => this.drawMap() }
-      ];
-      scripts.forEach(({ src, target, onload }) => {
-        const script = document.createElement('script');
-        script.src = src;
-        script.type = 'text/javascript';
-        if (onload) script.onload = onload;
-        document[target].appendChild(script);
-      });
-    },
+    // loadMap() {
+    //   // 创建并加载所需的脚本
+    //   const scripts = [
+    //     { src: 'https://mapapi.qq.com/web/lbs/visualizationApi/demo/data/trail.js', target: 'head', onload: () => this.drawMap() }
+    //   ];
+    //   scripts.forEach(({ src, target, onload }) => {
+    //     const script = document.createElement('script');
+    //     script.src = src;
+    //     script.type = 'text/javascript';
+    //     if (onload) script.onload = onload;
+    //     document[target].appendChild(script);
+    //   });
+    // },
     drawMap(){
       this.map = new TMap.Map("container", {
         center: new TMap.LatLng(this.initCenter.lng, this.initCenter.lat),
@@ -65,7 +101,6 @@ export default {
           playRate: 70, // 动画播放倍速
           enableHighlightPoint: true, //是否显示头部高亮点
       }).addTo(this.map) // 通过addTo()添加到指定地图实例
-      .setData(trailData);   // 轨迹点数据
     }
   },
 };

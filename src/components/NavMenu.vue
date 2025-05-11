@@ -10,15 +10,13 @@
       @select="handleSelect"
       router
     >
-      <el-menu-item index="/">轨迹展示</el-menu-item>
-      <el-menu-item index="/statistics">范围统计</el-menu-item>
-      <el-menu-item index="density">车流密度</el-menu-item>
-      <el-menu-item index="association">区域关联分析</el-menu-item>
-      <el-menu-item index="frequency">频繁路径分析</el-menu-item>
-      <el-menu-item index="/time">通时行间分析</el-menu-item>
-      <el-menu-item index="/admin">
-        <i class="el-icon-menu"></i>
-        <span slot="title">登录信息</span>
+      <el-menu-item
+        v-for="item in menuItems"
+        :key="item.index"
+        :index="item.index"
+      >
+        <i :class="item.icon" v-if="item.icon"></i>
+        <span slot="title">{{ item.label }}</span>
       </el-menu-item>
     </el-menu>
     <div
@@ -42,9 +40,9 @@
       >
         <el-option
           v-for="item in options"
-          :key="item.value"
-          :label="item.label"
-          :value="item.value"
+          :key="item"
+          :label="item"
+          :value="item"
         />
       </el-select>
       <el-button
@@ -59,18 +57,35 @@
 </template>
 
 <script>
+import axios from "axios";
 export default {
   name: "NavMenu",
   data() {
     return {
       activeIndex: this.$route.path,
       selectedOptions: [],
-      options: [
-        { value: "1", label: "选项1" },
-        { value: "2", label: "选项2" },
-        { value: "3", label: "选项3" },
+      options: ["1", "2"], // 初始化选项为空
+      menuItems: [
+        { index: "/", label: "轨迹展示" },
+        { index: "/statistics", label: "范围统计" },
+        { index: "density", label: "车流密度" },
+        { index: "association", label: "区域关联分析" },
+        { index: "frequency", label: "频繁路径分析" },
+        { index: "/time", label: "通时行间分析" },
+        { index: "/admin", label: "登录信息", icon: "el-icon-menu" },
       ],
     };
+  },
+  mounted() {
+    // 组件挂载后发起请求
+    axios
+      .get("/api/trailLists")
+      .then((response) => {
+        this.options = response.data;
+      })
+      .catch((error) => {
+        console.error("获取轨迹列表失败:", error);
+      });
   },
   watch: {
     "$route.path"(newPath) {
