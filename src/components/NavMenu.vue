@@ -35,8 +35,13 @@
         v-model="selectedOptions"
         multiple
         filterable
-        placeholder="请选择"
-        v-if="this.activeIndex === '/'"
+        remote
+        reserve-keyword
+        collapse-tags
+        clearable
+        :remote-method="remoteMethod"
+        placeholder="请输入id"
+        v-show="this.activeIndex === '/'"
       >
         <el-option
           v-for="item in options"
@@ -47,7 +52,7 @@
       </el-select>
       <el-button
         type="primary"
-        v-if="this.activeIndex === '/'"
+        v-show="this.activeIndex === '/'"
         @click="handleSearch"
       >
         确定
@@ -64,7 +69,7 @@ export default {
     return {
       activeIndex: this.$route.path,
       selectedOptions: [],
-      options: ["1", "2"], // 初始化选项为空
+      options: [], // 初始化选项为空
       menuItems: [
         { index: "/", label: "轨迹展示" },
         { index: "/statistics", label: "范围统计" },
@@ -77,15 +82,15 @@ export default {
     };
   },
   mounted() {
-    // 组件挂载后发起请求
-    axios
-      .get("/api/trailLists")
-      .then((response) => {
-        this.options = response.data;
-      })
-      .catch((error) => {
-        console.error("获取轨迹列表失败:", error);
-      });
+    // // 组件挂载后发起请求
+    // axios
+    //   .get("/api/trailLists")
+    //   .then((response) => {
+    //     this.options = response.data;
+    //   })
+    //   .catch((error) => {
+    //     console.error("获取轨迹列表失败:", error);
+    //   });
   },
   watch: {
     "$route.path"(newPath) {
@@ -99,6 +104,36 @@ export default {
     },
     handleSearch() {
       this.$emit("search", this.selectedOptions);
+    },
+    // 定义防抖后的远程方法
+    remoteMethod(queryString) {
+      // 定义防抖定时器
+      let timer = null;
+      // 清除之前的定时器
+      if (timer) {
+        clearTimeout(timer);
+      }
+      // 如果查询字符串为空，不发送请求
+      if (!queryString) {
+        this.options = [];
+        return;
+      }
+      // 设置新的定时器
+      timer = setTimeout(() => {
+        // 发起get请求
+        axios
+          .get("/api/trailLists", {
+            params: {
+              keyword: queryString,
+            },
+          })
+          .then((response) => {
+            this.options = response.data;
+          })
+          .catch((error) => {
+            console.error("获取轨迹列表失败:", error);
+          });
+      }, 400);
     },
   },
 };

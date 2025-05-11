@@ -43,6 +43,8 @@ export default {
               },
               body: JSON.stringify({
                 taxi_ids: newRoutes,
+                simplify: true,
+                tolerance: 0.01, 
               }),
             });
             if (!response.ok) {

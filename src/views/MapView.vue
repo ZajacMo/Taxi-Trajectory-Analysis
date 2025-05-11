@@ -1,6 +1,10 @@
 <template>
   <div class="map-container">
-    <map-container ref="mapInstance" @ready="initMapOverlays" />
+    <map-container
+      ref="mapInstance"
+      @ready="initMapOverlays"
+      :selectedID="this.selectedRoutes"
+    />
     <g
       v-for="node in nodes"
       :key="node.id"
@@ -60,33 +64,24 @@ export default {
     async calculatePath() {
       const { startNode, endNode } = this.$store.state;
       try {
-        const res = await this.$axios.post("/shortest-path", {
-          startId: startNode.id,
-          endId: endNode.id,
-          transport: this.transportType,
-        });
+        const res = await this.$axios.post(
+          "/shortest-path",
+          {
+            startId: startNode.id,
+            endId: endNode.id,
+            transport: this.transportType,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+          }
+        );
         this.$store.commit("SET_CURRENT_PATH", res.data.path);
       } catch (error) {
         console.error("路径计算失败:", error);
       }
-    },
-  },
-  watch: {
-    selectedRoutes: {
-      async handler(newRoutes, oldRoutes) {
-        if (newRoutes.length !== oldRoutes.length) {
-          // 向后端发送选中路线数据
-          try {
-            // 确保axios实例已正确导入和配置
-            await this.$http.post("/api/trails", {
-              routes: newRoutes,
-            });
-          } catch (error) {
-            console.error("发送路线数据失败:", error);
-          }
-        }
-      },
-      deep: true,
     },
   },
 };

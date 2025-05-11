@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
-    <nav-menu @search="selectedRoutes = $event" />
+    <nav-menu @search="selectedRoutes = $event" style="max-width: 65%" />
     <router-view :key="this.$route.paths" id="router" />
     <map-view id="map" :selected-routes="selectedRoutes" />
   </div>
@@ -55,7 +55,7 @@ body {
   min-width: calc(100vw - 600px);
 }
 #router {
-  width: 600px;
+  width: 20%;
   height: 100%;
   background-color: white;
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
