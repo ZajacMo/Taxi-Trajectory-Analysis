@@ -4,10 +4,14 @@ from typing import List, Optional
 from dataclasses import dataclass
 from datetime import datetime
 from flask_cors import CORS  # 引入flask-cors
+from flask_socketio import SocketIO, emit
+from concurrent.futures import ThreadPoolExecutor
+from coordTransform import wgs84_to_gcj02
 
 app = Flask(__name__)
 # DATA_DIR = ".\\src\\utils\\taxi_log_2008_by_id"
 DATA_DIR = "taxi_log_2008_by_id"
+socketio = SocketIO(app, cors_allowed_origins='*')
 CORS(app)  # 启用CORS支持
 # F1
 @dataclass
@@ -176,7 +180,7 @@ def get_trail_lists():
 
     return jsonify(matching_ids)
 
-@app.route('/trails', methods=['POST'])
+@app.route('/trails/data', methods=['POST'])
 def get_trails_post():
     """
     处理POST请求，获取轨迹数据
@@ -197,35 +201,51 @@ def get_trails_post():
     except Exception:
         return jsonify({"error": "Invalid JSON body"}), 400
 
-    taxi_ids = req.get("taxi_ids", [])
+    taxi_ids = req.get("taxi_ids", "all")
     simplify = req.get("simplify", False)
     tolerance = float(req.get("tolerance", 0.0001))
 
     # print("Received request:", req)
     print(os.getcwd())
     if not taxi_ids:
+        return jsonify({"error": "No taxi IDs provided"}), 400
+    if taxi_ids == "all":
         try:
             taxi_ids = [f.split('.')[0] for f in os.listdir(DATA_DIR) if f.endswith('.txt')]
         except FileNotFoundError:
             return jsonify({"error": "Data directory not found"}), 500
 
     result = []
-    for taxi_id in taxi_ids:
+    def process_taxi_id(taxi_id):
         trail = load_taxi_data(taxi_id)
         if trail:
             trail = clean_trail(trail, simplify, tolerance)
-            result.append({
+            transformed_points = []
+            for pt in trail.points:
+                new_lat, new_lng = wgs84_to_gcj02(pt.latitude, pt.longitude)
+                transformed_points.append(TrailPoint(new_lat, new_lng, pt.timestamp))
+            trail = TrailLine(taxi_id=trail.taxi_id, points=transformed_points)
+            return {
                 "vendor": int(trail.taxi_id),
                 "path": [[
                         pt.latitude,
                         pt.longitude,
                         datetime.strptime(pt.timestamp, "%Y-%m-%d %H:%M:%S").timestamp()
-                    ]for pt in trail.points
+                    ] for pt in trail.points
                 ]
-            })
-            # 每处理一个 taxi_id 就尝试释放内存
-            del trail
-    return jsonify(result)
+            }
+        return None
+
+    # 创建一个最大线程数为20的线程池
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        results = list(executor.map(process_taxi_id, taxi_ids))
+        if len(results) % 50==0:
+            socketio.emit('task_progress', {
+                'status': 'processing',
+                'progress': len(results) / len(taxi_ids) * 100
+            }, namespace='/trails/progress')
+
+    return jsonify(results)
 
 
 if __name__ == "__main__":

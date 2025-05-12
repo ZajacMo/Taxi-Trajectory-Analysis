@@ -1,25 +1,20 @@
 <template>
   <div id="app">
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
-    <nav-menu @search="selectedRoutes = $event" style="max-width: 65%" />
     <router-view :key="this.$route.paths" id="router" />
-    <map-view id="map" :selected-routes="selectedRoutes" />
+    <map-view id="map" />
   </div>
 </template>
 
 <script>
-import NavMenu from "./components/NavMenu.vue";
 import MapView from "./views/MapView.vue";
 export default {
   name: "App",
   components: {
-    NavMenu,
     MapView,
   },
   data() {
-    return {
-      selectedRoutes: [],
-    };
+    return {};
   },
   methods: {},
   // watch: {

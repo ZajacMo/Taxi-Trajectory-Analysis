@@ -1,16 +1,29 @@
 <template>
   <div class="area-search-form">
-    <el-form ref="form" :model="form" label-width="7em">
-      <el-form-item label="西南点坐标">
-        <el-input v-model="sw.lng" placeholder="经度" />
-        <el-input v-model="sw.lat" placeholder="纬度" />
-        <el-button @click="pickPoint('sw')">地图选点</el-button>
+    <el-form
+      :ref="area"
+      :model="area"
+      label-width="3em"
+    >
+      <h4>{{ area.sw.label }}</h4>
+      <el-form-item label="纬度">
+        <el-input v-model="area.sw.lat" placeholder="请输入纬度" />
       </el-form-item>
-      <el-form-item label="东北点坐标">
-        <el-input v-model="ne.lng" placeholder="经度" />
-        <el-input v-model="ne.lat" placeholder="纬度" />
-        <el-button @click="pickPoint('ne')">地图选点</el-button>
+      <el-form-item label="经度">
+        <el-input v-model="area.sw.lng" placeholder="请输入经度" />
       </el-form-item>
+      <h4>{{ area.ne.label }}</h4>
+      <el-form-item label="纬度">
+        <el-input v-model="area.ne.lat" placeholder="请输入纬度" />
+      </el-form-item>
+      <el-form-item label="经度">
+        <el-input v-model="area.ne.lng" placeholder="请输入经度" />
+      </el-form-item>
+      <el-form-item>
+        <el-button @click="pickPoint">地图选点</el-button>
+      </el-form-item>
+    </el-form>
+    <el-form>
       <el-form-item label="时间段">
         <el-date-picker
           v-model="dateRange"
@@ -29,6 +42,7 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
 export default {
   name: "AreaSearchDialog",
   props: {
@@ -44,8 +58,10 @@ export default {
   data() {
     return {
       localVisible: this.visible, // 本地弹窗显示状态，避免直接修改 props
-      sw: { lng: "", lat: "" },
-      ne: { lng: "", lat: "" },
+      area: {
+        sw:{ label: "西南点", point: { lng: "", lat: "" } },
+        ne:{ label: "东北点", point: { lng: "", lat: "" } },
+      },
       dateRange: [],
       pickerOptions: {
         shortcuts: [
@@ -83,31 +99,57 @@ export default {
       }
     },
   },
+  computed:{
+    ...mapState(["map","markerLayer","markedPoint"]),
+  },
   methods: {
     handleClose() {
       this.localVisible = false;
     },
-    pickPoint(type) {
-      // 触发地图组件进入选点模式，选中后回填经纬度
-      this.$emit("pick-point", type);
+    pickPoint() {
+      if(!this.markerLayer){
+        this.$store.commit("SET_MARKERLAYER",new TMap.MultiRectangle({
+          map: this.map,
+        }));
+      }
+      editor = new TMap.tools.GeometryEditor({
+        map: this.map, // 编辑器绑定的地图对象
+        overlayList: [
+          {
+            overlay: this.markerLayer, // 要编辑的图层,
+            id: 'rectangle',
+          },
+        ],
+        actionMode: TMap.tools.constants.EDITOR_ACTION.DRAW, // 编辑器的工作模式
+        activeOverlayId: 'rectangle', // 激活图层
+        snappable: true, // 开启吸附
+      });
+      // 监听绘制结束事件，获取绘制几何图形
+      editor.on('draw_complete', (geometry) => {
+        // 判断当前处于编辑状态的图层id是否是overlayList中id为rectangle（矩形）图层
+        var id = geometry.id;
+        // 获取矩形顶点坐标
+        var geo = this.markerLayer.geometries.filter(function (item) {
+          return item.id === id;
+        });
+        console.log('绘制的矩形定位的坐标：', geo[0].paths);
+      });
+      this.$forceUpdate();
+      // this.$store.commit("setMarkerLayer", markerLayer);
+      // this.$emit("pick-point", type);
     },
     clearAll() {
-      this.sw = { lng: "", lat: "" };
-      this.ne = { lng: "", lat: "" };
-      this.dateRange = [];
+      this.area.forEach((point) => {
+        point.lng = "";
+        point.lat = "";
+      });
     },
     saveTemp() {
       // 可扩展：暂存当前输入
       this.$message.success("已暂存");
     },
     confirm() {
-      // 提交区域查找参数
-      this.$emit("confirm", {
-        sw: this.sw,
-        ne: this.ne,
-        dateRange: this.dateRange,
-      });
-      this.$emit("close");
+  
     },
     setBox(sw, ne) {
       // 框选后自动填入
@@ -125,7 +167,7 @@ export default {
 .area-search-form {
   padding: 40px;
   .el-input {
-    width: 30%;
+    /* width: 30%; */
     padding-right: 20px;
   }
 }

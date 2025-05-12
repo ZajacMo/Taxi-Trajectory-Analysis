@@ -1,11 +1,8 @@
 <template>
   <div class="map-container">
-    <map-container
-      ref="mapInstance"
-      @ready="initMapOverlays"
-      :selectedID="this.selectedRoutes"
-    />
-    <g
+    <nav-menu style="max-width: 65%" />
+    <map-container ref="mapInstance" @ready="initMapOverlays" />
+    <!-- <g
       v-for="node in nodes"
       :key="node.id"
       :transform="`translate(${node.x},${node.y})`"
@@ -13,23 +10,18 @@
     >
       <circle r="15" :fill="node.color || '#4CAF50'" />
       <text y="5" class="node-label">{{ node.name }}</text>
-    </g>
+    </g> -->
   </div>
 </template>
 
 <script>
-import { mapState } from "vuex";
+// import { mapState } from "vuex";
+import NavMenu from "@/components/NavMenu.vue";
 import MapContainer from "@/components/MapContainer";
-
 export default {
   components: {
     MapContainer,
-  },
-  props: {
-    selectedRoutes: {
-      type: Array,
-      default: () => [],
-    },
+    NavMenu,
   },
   data() {
     return {
@@ -38,15 +30,15 @@ export default {
       pathOverlays: [],
     };
   },
-  computed: {
-    ...mapState(["nodes", "edges", "currentPath"]),
-    paths() {
-      return this.currentPath?.map((segment) => ({
-        d: this.generatePathD(segment),
-        color: this.getTransportColor(segment.transport),
-      }));
-    },
-  },
+  // computed: {
+  //   ...mapState(["nodes", "edges", "currentPath"]),
+  //   paths() {
+  //     return this.currentPath?.map((segment) => ({
+  //       d: this.generatePathD(segment),
+  //       color: this.getTransportColor(segment.transport),
+  //     }));
+  //   },
+  // },
   methods: {
     // 地图初始化完成回调
     initMapOverlays() {

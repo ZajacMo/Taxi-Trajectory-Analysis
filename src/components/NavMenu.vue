@@ -53,6 +53,7 @@
       <el-button
         type="primary"
         v-show="this.activeIndex === '/'"
+        :loading="this.loading"
         @click="handleSearch"
       >
         确定
@@ -68,8 +69,8 @@ export default {
   data() {
     return {
       activeIndex: this.$route.path,
-      selectedOptions: [],
-      options: [], // 初始化选项为空
+      selectedOptions: [], // 选中的选项
+      options: [], // 关键字匹配结果
       menuItems: [
         { index: "/", label: "轨迹展示" },
         { index: "/statistics", label: "范围统计" },
@@ -81,20 +82,14 @@ export default {
       ],
     };
   },
-  mounted() {
-    // // 组件挂载后发起请求
-    // axios
-    //   .get("/api/trailLists")
-    //   .then((response) => {
-    //     this.options = response.data;
-    //   })
-    //   .catch((error) => {
-    //     console.error("获取轨迹列表失败:", error);
-    //   });
-  },
   watch: {
     "$route.path"(newPath) {
       this.activeIndex = newPath;
+    },
+  },
+  computed: {
+    loading() {
+      return this.$store.state.trails.loading;
     },
   },
   methods: {
@@ -103,7 +98,11 @@ export default {
       this.$emit("menu-select", key);
     },
     handleSearch() {
-      this.$emit("search", this.selectedOptions);
+      this.$store.dispatch("fetchTrails", {
+        taxi_ids: this.selectedOptions,
+        simplify: false,
+        tolerance: 0.001,
+      });
     },
     // 定义防抖后的远程方法
     remoteMethod(queryString) {
