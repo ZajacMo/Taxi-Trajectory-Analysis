@@ -112,7 +112,7 @@ export default {
           map: this.map,
         }));
       }
-      editor = new TMap.tools.GeometryEditor({
+      const editor = new TMap.tools.GeometryEditor({
         map: this.map, // 编辑器绑定的地图对象
         overlayList: [
           {
@@ -132,9 +132,14 @@ export default {
         var geo = this.markerLayer.geometries.filter(function (item) {
           return item.id === id;
         });
-        console.log('绘制的矩形定位的坐标：', geo[0].paths);
+        // console.log('绘制的矩形定位的坐标：', geo[0].paths);
+        this.area.ne.lat = geo[0].paths[1].lat;
+        this.area.ne.lng = geo[0].paths[1].lng;
+        this.area.sw.lat = geo[0].paths[3].lat;
+        this.area.sw.lng = geo[0].paths[3].lng;
+        this.$forceUpdate();
       });
-      this.$forceUpdate();
+      
       // this.$store.commit("setMarkerLayer", markerLayer);
       // this.$emit("pick-point", type);
     },
