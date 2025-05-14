@@ -2,7 +2,7 @@ import os
 import sqlite3
 import datetime
 
-DATA_DIR = r"E:\360MoveData\Users\ASUS\Desktop\T-drive Taxi Trajectories\release\taxi_log_2008_by_id"
+DATA_DIR = r".\\taxi_log_2008_by_id"
 DB_PATH = "trajectory.db"
 
 def parse_line(line):

@@ -22,6 +22,16 @@ export default {
   //     console.log("selectedRoutes", newRoutes);
   //   },
   // },
+  //检测路由地址从statistics离开而做出相应的操作
+  watch: {
+    $route(to, from) {
+      if (from.path === "/statistics") {
+        if (this.$store.state.map.map) {
+          this.$store.commit("RESET_STATISTICS");
+        }
+      }
+    },
+  },
 };
 </script>
 <style>

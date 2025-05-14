@@ -5,37 +5,35 @@
       :model="area"
       label-width="3em"
     >
-      <h4>{{ area.sw.label }}</h4>
-      <el-form-item label="纬度">
-        <el-input v-model="area.sw.lat" placeholder="请输入纬度" />
+      <h4>{{ area.nw.label }}</h4>
+      <el-form-item label="纬度" prop="lat">
+        <el-input v-model="area.nw.point.lat" placeholder="请输入纬度" />
       </el-form-item>
-      <el-form-item label="经度">
-        <el-input v-model="area.sw.lng" placeholder="请输入经度" />
+      <el-form-item label="经度" prop="lng">
+        <el-input v-model="area.nw.point.lng" placeholder="请输入经度" />
       </el-form-item>
-      <h4>{{ area.ne.label }}</h4>
-      <el-form-item label="纬度">
-        <el-input v-model="area.ne.lat" placeholder="请输入纬度" />
+      <h4>{{ area.se.label }}</h4>
+      <el-form-item label="纬度" prop="lat">
+        <el-input v-model="area.se.point.lat" placeholder="请输入纬度" />
       </el-form-item>
-      <el-form-item label="经度">
-        <el-input v-model="area.ne.lng" placeholder="请输入经度" />
+      <el-form-item label="经度" prop="lng">
+        <el-input v-model="area.se.point.lng" placeholder="请输入经度" />
       </el-form-item>
-      <el-form-item>
-        <el-button @click="pickPoint">地图选点</el-button>
-      </el-form-item>
+      <el-button @click="pickPoint">地图选点</el-button>
     </el-form>
     <el-form>
-      <el-form-item label="时间段">
+      <el-form-item label="时间段" prop="date">
         <el-date-picker
           v-model="dateRange"
           type="datetimerange"
           start-placeholder="开始时间"
           end-placeholder="结束时间"
           :picker-options="pickerOptions"
+          prop="date"
           align="right"
         />
       </el-form-item>
       <el-button type="danger" @click="clearAll">清空</el-button>
-      <el-button @click="saveTemp">暂存</el-button>
       <el-button type="primary" @click="confirm">确认</el-button>
     </el-form>
   </div>
@@ -59,8 +57,8 @@ export default {
     return {
       localVisible: this.visible, // 本地弹窗显示状态，避免直接修改 props
       area: {
-        sw:{ label: "西南点", point: { lng: "", lat: "" } },
-        ne:{ label: "东北点", point: { lng: "", lat: "" } },
+        nw:{ label: "西北点", point: { lng: "", lat: "" } },
+        se:{ label: "东南点", point: { lng: "", lat: "" } },
       },
       dateRange: [],
       pickerOptions: {
@@ -107,59 +105,89 @@ export default {
       this.localVisible = false;
     },
     pickPoint() {
-      if(!this.markerLayer){
-        this.$store.commit("SET_MARKERLAYER",new TMap.MultiRectangle({
-          map: this.map,
-        }));
+      if(this.map.markerLayer){
+        this.$store.commit("RESET_STATISTICS");
       }
-      const editor = new TMap.tools.GeometryEditor({
-        map: this.map, // 编辑器绑定的地图对象
-        overlayList: [
-          {
-            overlay: this.markerLayer, // 要编辑的图层,
-            id: 'rectangle',
+      else{
+        this.$store.commit("SET_MAP",{
+          mode:{
+            draw:TMap.tools.constants.EDITOR_ACTION.DRAW, // 编辑器的工作模式
+            interact:TMap.tools.constants.EDITOR_ACTION.INTERACT, // 进入编辑模式
           },
-        ],
-        actionMode: TMap.tools.constants.EDITOR_ACTION.DRAW, // 编辑器的工作模式
-        activeOverlayId: 'rectangle', // 激活图层
-        snappable: true, // 开启吸附
-      });
-      // 监听绘制结束事件，获取绘制几何图形
-      editor.on('draw_complete', (geometry) => {
-        // 判断当前处于编辑状态的图层id是否是overlayList中id为rectangle（矩形）图层
-        var id = geometry.id;
-        // 获取矩形顶点坐标
-        var geo = this.markerLayer.geometries.filter(function (item) {
-          return item.id === id;
+          markerLayer: new TMap.MultiRectangle({
+            map: this.map.map,
+          })}),
+        this.$store.commit("SET_MAP",{
+          editor: new TMap.tools.GeometryEditor({
+            map: this.map.map, // 编辑器绑定的地图对象
+            overlayList: [
+              {
+                overlay: this.map.markerLayer, // 要编辑的图层,
+                id: 'rectangle',
+                selectedStyle:"highlight", // 选中样式
+              },
+            ],
+            actionMode: this.map.mode.draw, // 编辑器的工作模式
+            activeOverlayId: 'rectangle', // 激活图层
+            selectable: true, // 开启选择
+            snappable: true, // 开启吸附
+          })
         });
-        // console.log('绘制的矩形定位的坐标：', geo[0].paths);
-        this.area.ne.lat = geo[0].paths[1].lat;
-        this.area.ne.lng = geo[0].paths[1].lng;
-        this.area.sw.lat = geo[0].paths[3].lat;
-        this.area.sw.lng = geo[0].paths[3].lng;
-        this.$forceUpdate();
-      });
-      
+        // 监听绘制结束事件，获取绘制几何图形
+        this.map.editor.on('draw_complete', (geometry) => {
+          this.$store.commit("SET_MAP", {rectangleID:geometry.id});
+          // 获取矩形顶点坐标
+          var geo = this.map.markerLayer.geometries.filter(function (item) {
+            return item.id === geometry.id;
+          })[0];
+          this.setBox(geo.paths[2], geo.paths[0]);   
+          this.map.editor.setActionMode(this.map.mode.interact); // 进入编辑模式
+          // 需要完善编辑功能
+        });
+      }
       // this.$store.commit("setMarkerLayer", markerLayer);
       // this.$emit("pick-point", type);
     },
     clearAll() {
-      this.area.forEach((point) => {
-        point.lng = "";
-        point.lat = "";
-      });
-    },
-    saveTemp() {
-      // 可扩展：暂存当前输入
-      this.$message.success("已暂存");
+      this.setBox()
+      this.dateRange = [];
+      this.$store.commit("RESET_STATISTICS");
     },
     confirm() {
-  
+      //将dateRange转换为
+      //   {
+      // "startTime": "YYYY-MM-DD HH:MM:SS",  # 开始时间
+      // "endTime": "YYYY-MM-DD HH:MM:SS",    # 结束时间
+      //   }
+      if (this.area.nw.point.lng === "" || this.area.nw.point.lat === "" || this.area.se.point.lng === "" || this.area.se.point.lat === "") {
+        this.$message.error("请输入完整的区域信息");
+        return;
+      }
+      if (!this.dateRange||this.dateRange.length === 0) {
+        this.$message.error("请输入完整的时间信息");
+        return;
+      }
+      // 转换时间格式
+      var res={
+        startTime: this.dateRange[0].toISOString().split("T")[0] + " " + this.dateRange[0].toTimeString().split(" ")[0],
+        endTime: this.dateRange[1].toISOString().split("T")[0] + " " + this.dateRange[1].toTimeString().split(" ")[0],
+        ltPoint:[this.area.nw.point.lng,this.area.nw.point.lat],
+        rbPoint:[this.area.se.point.lng,this.area.se.point.lat],
+      }
+      // console.log(res);
+      // 向/api/query_region接口发送请求
+      this.$http.post("/api/query_region", res).then((response) => {
+        console.log(response.data);
+        // this.$store.commit("SET_STATISTICS", response.data);
+        this.handleClose();
+      });
+
     },
-    setBox(sw, ne) {
+    setBox(nw={ lng: "", lat: "" }, se={ lng: "", lat: "" }) {
       // 框选后自动填入
-      this.sw = { ...sw };
-      this.ne = { ...ne };
+      this.area.nw.point = { lng: nw.lng, lat: nw.lat };
+      this.area.se.point = { lng: se.lng, lat: se.lat };
+      this.$forceUpdate();
     },
   },
 };

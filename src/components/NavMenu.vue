@@ -143,7 +143,7 @@ export default {
   position: fixed;
   top: 24px;
   left: 32px;
-  z-index: 9999;
+  z-index: 10;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   border-radius: 6px;
 }

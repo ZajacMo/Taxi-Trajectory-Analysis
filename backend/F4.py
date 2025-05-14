@@ -69,7 +69,7 @@ def process_taxi_data(folder_path, r):
 # 示例使用
 if __name__ == "__main__":
     # 参数设置
-    folder_path = "GO"  # 替换为实际的文件夹路径
+    folder_path = "taxi_log_2008_by_id"  # 替换为实际的文件夹路径
     grid_width = 0.01   # 网格宽度参数r
     
     # 处理数据

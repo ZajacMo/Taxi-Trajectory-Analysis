@@ -3,6 +3,7 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
 export default {
   name: "MapContainer",
   data() {
@@ -16,9 +17,12 @@ export default {
   },
   mounted() {
     // this.loadMap();
-    if(!this.$store.state.map){
+    if(!this.$store.state.map.map){
       this.drawMap();
     }
+  },
+  computed: {
+    ...mapState(["map"]),
   },
   methods: {
     // loadMap() {
@@ -35,37 +39,39 @@ export default {
     //   });
     // },
     drawMap(){
-      const map = new TMap.Map("container", {
-        center: new TMap.LatLng(this.initCenter.lng, this.initCenter.lat),
-        zoom: this.zoomLevel,
-        mapStyleId: "style4",
-        baseMap:{
-          type: "vector",
-          features:["base","building3d"],
-        }
+      this.$store.commit("SET_MAP", {
+        map:new TMap.Map("container", {
+          center: new TMap.LatLng(this.initCenter.lng, this.initCenter.lat),
+          zoom: this.zoomLevel,
+          mapStyleId: "style4",
+          baseMap:{
+            type: "vector",
+            features:["base","building3d"],
+          }
+        })
       });
       // 获取缩放控件实例并设置到右下角
-      map
+      this.map.map
         .getControl(TMap.constants.DEFAULT_CONTROL_ID.ZOOM)
-        .setPosition(TMap.constants.CONTROL_POSITION.BOTTOM_RIGHT);
+        .setPosition(TMap.constants.CONTROL_POSITION.BOTTOM_RIGHT)
       // 获取3D罗盘控件实例并设置到右下角
-      map
+      this.map.map
         .getControl(TMap.constants.DEFAULT_CONTROL_ID.ROTATION)
         .setPosition(TMap.constants.CONTROL_POSITION.BOTTOM_RIGHT);
       // 添加轨迹可视化
-      const trail = new TMap.visualization.Trail({
-        pickStyle: function (trailLine) {
-          return {
-              width: 2,
-              color: "rgba(29,250,242,0.3)",
+      this.$store.commit("SET_MAP", {
+        trail: new TMap.visualization.Trail({
+          pickStyle: function (trailLine) {
+            return {
+                width: 2,
+                color: "rgba(29,250,242,0.3)",
             };
           },
           showDuration: 120, //动画中轨迹点高亮的持续时间
           playRate: 70, // 动画播放倍速
           enableHighlightPoint: true, //是否显示头部高亮点
-      }).addTo(map) // 通过addTo()添加到指定地图实例
-      this.$store.commit("SET_TRAIL", trail);
-      this.$store.commit("SET_MAP", map);
+        }).addTo(this.map.map)
+      }) // 通过addTo()添加到指定地图实例
     }
   },
 };
