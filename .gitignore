@@ -2,6 +2,7 @@
 node_modules
 /dist
 /backend/GO
+/backend/taxi_log_2008_by_id
 
 # local env files
 .env.local
