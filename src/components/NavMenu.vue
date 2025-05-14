@@ -74,7 +74,7 @@ export default {
       menuItems: [
         { index: "/", label: "轨迹展示" },
         { index: "/statistics", label: "范围统计" },
-        { index: "density", label: "车流密度" },
+        { index: "/density", label: "车流密度" },
         { index: "association", label: "区域关联分析" },
         { index: "frequency", label: "频繁路径分析" },
         { index: "/time", label: "通时行间分析" },
@@ -143,7 +143,7 @@ export default {
   position: fixed;
   top: 24px;
   left: 32px;
-  z-index: 10;
+  z-index: 1500;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   border-radius: 6px;
 }

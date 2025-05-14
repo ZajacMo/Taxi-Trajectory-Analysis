@@ -1,3 +1,3 @@
 src/components/MapContainer.vue
 sre/store
-src/components/AreaSearchDialog.vue
+src/views/AreaSearchView.vue

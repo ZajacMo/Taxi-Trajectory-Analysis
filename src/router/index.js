@@ -1,6 +1,7 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
-import AreaSearchDialog from "@/components/AreaSearchDialog.vue";
+import AreaSearchView from "@/views/AreaSearchView.vue";
+import DensityView from "@/views/DensityView.vue";
 
 Vue.use(VueRouter);
 
@@ -12,7 +13,12 @@ const routes = [
   {
     path: "/statistics",
     name: "AreaStatistics",
-    component: AreaSearchDialog,
+    component: AreaSearchView,
+  },
+  {
+    path: "/density",
+    name: "Density",
+    component: DensityView,
   },
   {
     path: "*",

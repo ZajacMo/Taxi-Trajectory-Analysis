@@ -1,10 +1,6 @@
 <template>
   <div class="area-search-form">
-    <el-form
-      :ref="area"
-      :model="area"
-      label-width="3em"
-    >
+    <el-form :ref="area" :model="area" label-width="3em">
       <h4>{{ area.nw.label }}</h4>
       <el-form-item label="纬度" prop="lat">
         <el-input v-model="area.nw.point.lat" placeholder="请输入纬度" />
@@ -42,7 +38,7 @@
 <script>
 import { mapState } from "vuex";
 export default {
-  name: "AreaSearchDialog",
+  name: "AreaSearchView",
   props: {
     mode: {
       type: String,
@@ -57,8 +53,8 @@ export default {
     return {
       localVisible: this.visible, // 本地弹窗显示状态，避免直接修改 props
       area: {
-        nw:{ label: "西北点", point: { lng: "", lat: "" } },
-        se:{ label: "东南点", point: { lng: "", lat: "" } },
+        nw: { label: "西北点", point: { lng: "", lat: "" } },
+        se: { label: "东南点", point: { lng: "", lat: "" } },
       },
       dateRange: [],
       pickerOptions: {
@@ -97,50 +93,50 @@ export default {
       }
     },
   },
-  computed:{
-    ...mapState(["map","markerLayer","markedPoint"]),
+  computed: {
+    ...mapState(["map", "markerLayer", "markedPoint"]),
   },
   methods: {
     handleClose() {
       this.localVisible = false;
     },
     pickPoint() {
-      if(this.map.markerLayer){
+      if (this.map.markerLayer) {
         this.$store.commit("RESET_STATISTICS");
-      }
-      else{
-        this.$store.commit("SET_MAP",{
-          mode:{
-            draw:TMap.tools.constants.EDITOR_ACTION.DRAW, // 编辑器的工作模式
-            interact:TMap.tools.constants.EDITOR_ACTION.INTERACT, // 进入编辑模式
+      } else {
+        this.$store.commit("SET_MAP", {
+          mode: {
+            draw: TMap.tools.constants.EDITOR_ACTION.DRAW, // 编辑器的工作模式
+            interact: TMap.tools.constants.EDITOR_ACTION.INTERACT, // 进入编辑模式
           },
           markerLayer: new TMap.MultiRectangle({
             map: this.map.map,
-          })}),
-        this.$store.commit("SET_MAP",{
-          editor: new TMap.tools.GeometryEditor({
-            map: this.map.map, // 编辑器绑定的地图对象
-            overlayList: [
-              {
-                overlay: this.map.markerLayer, // 要编辑的图层,
-                id: 'rectangle',
-                selectedStyle:"highlight", // 选中样式
-              },
-            ],
-            actionMode: this.map.mode.draw, // 编辑器的工作模式
-            activeOverlayId: 'rectangle', // 激活图层
-            selectable: true, // 开启选择
-            snappable: true, // 开启吸附
-          })
-        });
+          }),
+        }),
+          this.$store.commit("SET_MAP", {
+            editor: new TMap.tools.GeometryEditor({
+              map: this.map.map, // 编辑器绑定的地图对象
+              overlayList: [
+                {
+                  overlay: this.map.markerLayer, // 要编辑的图层,
+                  id: "rectangle",
+                  selectedStyle: "highlight", // 选中样式
+                },
+              ],
+              actionMode: this.map.mode.draw, // 编辑器的工作模式
+              activeOverlayId: "rectangle", // 激活图层
+              selectable: true, // 开启选择
+              snappable: true, // 开启吸附
+            }),
+          });
         // 监听绘制结束事件，获取绘制几何图形
-        this.map.editor.on('draw_complete', (geometry) => {
-          this.$store.commit("SET_MAP", {rectangleID:geometry.id});
+        this.map.editor.on("draw_complete", (geometry) => {
+          this.$store.commit("SET_MAP", { rectangleID: geometry.id });
           // 获取矩形顶点坐标
           var geo = this.map.markerLayer.geometries.filter(function (item) {
             return item.id === geometry.id;
           })[0];
-          this.setBox(geo.paths[2], geo.paths[0]);   
+          this.setBox(geo.paths[2], geo.paths[0]);
           this.map.editor.setActionMode(this.map.mode.interact); // 进入编辑模式
           // 需要完善编辑功能
         });
@@ -149,7 +145,7 @@ export default {
       // this.$emit("pick-point", type);
     },
     clearAll() {
-      this.setBox()
+      this.setBox();
       this.dateRange = [];
       this.$store.commit("RESET_STATISTICS");
     },
@@ -159,21 +155,32 @@ export default {
       // "startTime": "YYYY-MM-DD HH:MM:SS",  # 开始时间
       // "endTime": "YYYY-MM-DD HH:MM:SS",    # 结束时间
       //   }
-      if (this.area.nw.point.lng === "" || this.area.nw.point.lat === "" || this.area.se.point.lng === "" || this.area.se.point.lat === "") {
+      if (
+        this.area.nw.point.lng === "" ||
+        this.area.nw.point.lat === "" ||
+        this.area.se.point.lng === "" ||
+        this.area.se.point.lat === ""
+      ) {
         this.$message.error("请输入完整的区域信息");
         return;
       }
-      if (!this.dateRange||this.dateRange.length === 0) {
+      if (!this.dateRange || this.dateRange.length === 0) {
         this.$message.error("请输入完整的时间信息");
         return;
       }
       // 转换时间格式
-      var res={
-        startTime: this.dateRange[0].toISOString().split("T")[0] + " " + this.dateRange[0].toTimeString().split(" ")[0],
-        endTime: this.dateRange[1].toISOString().split("T")[0] + " " + this.dateRange[1].toTimeString().split(" ")[0],
-        ltPoint:[this.area.nw.point.lng,this.area.nw.point.lat],
-        rbPoint:[this.area.se.point.lng,this.area.se.point.lat],
-      }
+      var res = {
+        startTime:
+          this.dateRange[0].toISOString().split("T")[0] +
+          " " +
+          this.dateRange[0].toTimeString().split(" ")[0],
+        endTime:
+          this.dateRange[1].toISOString().split("T")[0] +
+          " " +
+          this.dateRange[1].toTimeString().split(" ")[0],
+        ltPoint: [this.area.nw.point.lng, this.area.nw.point.lat],
+        rbPoint: [this.area.se.point.lng, this.area.se.point.lat],
+      };
       // console.log(res);
       // 向/api/query_region接口发送请求
       this.$http.post("/api/query_region", res).then((response) => {
@@ -181,9 +188,8 @@ export default {
         // this.$store.commit("SET_STATISTICS", response.data);
         this.handleClose();
       });
-
     },
-    setBox(nw={ lng: "", lat: "" }, se={ lng: "", lat: "" }) {
+    setBox(nw = { lng: "", lat: "" }, se = { lng: "", lat: "" }) {
       // 框选后自动填入
       this.area.nw.point = { lng: nw.lng, lat: nw.lat };
       this.area.se.point = { lng: se.lng, lat: se.lat };
@@ -197,11 +203,11 @@ export default {
 .el-row + .el-row {
   margin-top: 8px;
 }
+.el-input {
+  /* width: 30%; */
+  padding-right: 20px;
+}
 .area-search-form {
   padding: 40px;
-  .el-input {
-    /* width: 30%; */
-    padding-right: 20px;
-  }
 }
 </style>
