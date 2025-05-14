@@ -1,6 +1,6 @@
 <template>
   <div class="area-search-form">
-    <el-form :ref="area" :model="area" label-width="3em">
+    <!-- <el-form :ref="area" :model="area" label-width="3em">
       <h4>{{ area.nw.label }}</h4>
       <el-form-item label="纬度" prop="lat">
         <el-input v-model="area.nw.point.lat" placeholder="请输入纬度" />
@@ -16,7 +16,8 @@
         <el-input v-model="area.se.point.lng" placeholder="请输入经度" />
       </el-form-item>
       <el-button @click="pickPoint">地图选点</el-button>
-    </el-form>
+    </el-form> -->
+    <select-rectangle @area-changed="handleAreaChange"></select-rectangle>
     <el-form>
       <el-form-item label="时间段" prop="date">
         <el-date-picker
@@ -36,9 +37,13 @@
 </template>
 
 <script>
+import SelectRectangle from "@/components/SelectRectangle.vue";
 import { mapState } from "vuex";
 export default {
   name: "AreaSearchView",
+  components: {
+    SelectRectangle,
+  },
   props: {
     mode: {
       type: String,
@@ -100,61 +105,60 @@ export default {
     handleClose() {
       this.localVisible = false;
     },
-    pickPoint() {
-      if (this.map.markerLayer) {
-        this.$store.commit("RESET_STATISTICS");
-      } else {
-        this.$store.commit("SET_MAP", {
-          mode: {
-            draw: TMap.tools.constants.EDITOR_ACTION.DRAW, // 编辑器的工作模式
-            interact: TMap.tools.constants.EDITOR_ACTION.INTERACT, // 进入编辑模式
-          },
-          markerLayer: new TMap.MultiRectangle({
-            map: this.map.map,
-          }),
-        }),
-          this.$store.commit("SET_MAP", {
-            editor: new TMap.tools.GeometryEditor({
-              map: this.map.map, // 编辑器绑定的地图对象
-              overlayList: [
-                {
-                  overlay: this.map.markerLayer, // 要编辑的图层,
-                  id: "rectangle",
-                  selectedStyle: "highlight", // 选中样式
-                },
-              ],
-              actionMode: this.map.mode.draw, // 编辑器的工作模式
-              activeOverlayId: "rectangle", // 激活图层
-              selectable: true, // 开启选择
-              snappable: true, // 开启吸附
-            }),
-          });
-        // 监听绘制结束事件，获取绘制几何图形
-        this.map.editor.on("draw_complete", (geometry) => {
-          this.$store.commit("SET_MAP", { rectangleID: geometry.id });
-          // 获取矩形顶点坐标
-          var geo = this.map.markerLayer.geometries.filter(function (item) {
-            return item.id === geometry.id;
-          })[0];
-          this.setBox(geo.paths[2], geo.paths[0]);
-          this.map.editor.setActionMode(this.map.mode.interact); // 进入编辑模式
-          // 需要完善编辑功能
-        });
-      }
-      // this.$store.commit("setMarkerLayer", markerLayer);
-      // this.$emit("pick-point", type);
+    handleAreaChange(area) {
+      // console.log("area changed", area);
+      this.area = area;
     },
+    // pickPoint() {
+    //   if (this.map.markerLayer) {
+    //     this.$store.commit("RESET_STATISTICS");
+    //   } else {
+    //     this.$store.commit("SET_MAP", {
+    //       mode: {
+    //         draw: TMap.tools.constants.EDITOR_ACTION.DRAW, // 编辑器的工作模式
+    //         interact: TMap.tools.constants.EDITOR_ACTION.INTERACT, // 进入编辑模式
+    //       },
+    //       markerLayer: new TMap.MultiRectangle({
+    //         map: this.map.map,
+    //       }),
+    //     }),
+    //       this.$store.commit("SET_MAP", {
+    //         editor: new TMap.tools.GeometryEditor({
+    //           map: this.map.map, // 编辑器绑定的地图对象
+    //           overlayList: [
+    //             {
+    //               overlay: this.map.markerLayer, // 要编辑的图层,
+    //               id: "rectangle",
+    //               selectedStyle: "highlight", // 选中样式
+    //             },
+    //           ],
+    //           actionMode: this.map.mode.draw, // 编辑器的工作模式
+    //           activeOverlayId: "rectangle", // 激活图层
+    //           selectable: true, // 开启选择
+    //           snappable: true, // 开启吸附
+    //         }),
+    //       });
+    //     // 监听绘制结束事件，获取绘制几何图形
+    //     this.map.editor.on("draw_complete", (geometry) => {
+    //       this.$store.commit("SET_MAP", { rectangleID: geometry.id });
+    //       // 获取矩形顶点坐标
+    //       var geo = this.map.markerLayer.geometries.filter(function (item) {
+    //         return item.id === geometry.id;
+    //       })[0];
+    //       this.setBox(geo.paths[2], geo.paths[0]);
+    //       this.map.editor.setActionMode(this.map.mode.interact); // 进入编辑模式
+    //       // 需要完善编辑功能
+    //     });
+    //   }
+    //   // this.$store.commit("setMarkerLayer", markerLayer);
+    //   // this.$emit("pick-point", type);
+    // },
     clearAll() {
       this.setBox();
       this.dateRange = [];
-      this.$store.commit("RESET_STATISTICS");
+      this.$store.commit("RESET_MARKERLAYER");
     },
     confirm() {
-      //将dateRange转换为
-      //   {
-      // "startTime": "YYYY-MM-DD HH:MM:SS",  # 开始时间
-      // "endTime": "YYYY-MM-DD HH:MM:SS",    # 结束时间
-      //   }
       if (
         this.area.nw.point.lng === "" ||
         this.area.nw.point.lat === "" ||
@@ -189,12 +193,12 @@ export default {
         this.handleClose();
       });
     },
-    setBox(nw = { lng: "", lat: "" }, se = { lng: "", lat: "" }) {
-      // 框选后自动填入
-      this.area.nw.point = { lng: nw.lng, lat: nw.lat };
-      this.area.se.point = { lng: se.lng, lat: se.lat };
-      this.$forceUpdate();
-    },
+    // setBox(nw = { lng: "", lat: "" }, se = { lng: "", lat: "" }) {
+    //   // 框选后自动填入
+    //   this.area.nw.point = { lng: nw.lng, lat: nw.lat };
+    //   this.area.se.point = { lng: se.lng, lat: se.lat };
+    //   this.$forceUpdate();
+    // },
   },
 };
 </script>

@@ -14,10 +14,8 @@
           size="medium"
         ></el-time-picker>
       </el-form-item>
-      <el-form-item>
-        <el-button @click="clearForm">清空</el-button>
-        <el-button type="primary" @click="confirmForm">确认</el-button>
-      </el-form-item>
+      <el-button @click="clearForm">清空</el-button>
+      <el-button type="primary" @click="confirmForm">确认</el-button>
     </el-form>
   </div>
 </template>

@@ -37,16 +37,7 @@ export default new Vuex.Store({
       state.map.trail.setData(value);
       state.trails.data = value;
     },
-    CREATE_MARKER(state, markerLayer) {
-      //监听点击事件添加marker
-      state.map.on("click", (evt) => {
-        markerLayer.add({
-          position: evt.latLng,
-        });
-        state.markedPoint = evt.latLng;
-      });
-    },
-    RESET_STATISTICS(state) {
+    RESET_MARKERLAYER(state) {
       if (state.map.rectangleID) {
         state.map.markerLayer.remove(state.map.rectangleID);
         state.map.rectangleID = null;

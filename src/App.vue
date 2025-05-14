@@ -27,7 +27,7 @@ export default {
     $route(to, from) {
       if (from.path === "/statistics") {
         if (this.$store.state.map.map) {
-          this.$store.commit("RESET_STATISTICS");
+          this.$store.commit("RESET_MARKERLAYER");
         }
       }
     },

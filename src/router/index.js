@@ -2,6 +2,7 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 import AreaSearchView from "@/views/AreaSearchView.vue";
 import DensityView from "@/views/DensityView.vue";
+import FrequencView from "@/views/FrequencView.vue";
 
 Vue.use(VueRouter);
 
@@ -19,6 +20,11 @@ const routes = [
     path: "/density",
     name: "Density",
     component: DensityView,
+  },
+  {
+    path: "/frequency",
+    name: "Frequency",
+    component: FrequencView,
   },
   {
     path: "*",
