@@ -107,7 +107,7 @@ def analyze_shortest_path():
         # 参数解析和验证
         area1 = tuple(map(float, request.args['area1'].split(',')))
         area2 = tuple(map(float, request.args['area2'].split(',')))
-        folder_path = request.args.get('folder_path', 'GO')
+        folder_path = request.args.get('folder_path', 'taxi_log_2008_by_id')
         workers = min(int(request.args.get('workers', cpu_count())), cpu_count())
         
         # 坐标转换

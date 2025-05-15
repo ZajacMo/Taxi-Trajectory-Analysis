@@ -14,8 +14,6 @@
           :precision="0"
         ></el-input-number>
       </el-form-item>
-      <el-button @click="clearForm">清空</el-button>
-      <el-button type="primary" @click="confirmForm">确认</el-button>
     </el-form>
   </div>
 </template>
@@ -49,6 +47,6 @@ export default {
   padding-right: 20px;
 }
 .frequency-search-form {
-  padding: 40px;
+  padding: 0px;
 }
 </style>

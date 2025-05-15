@@ -61,7 +61,7 @@ def query_region():
     except Exception as e:
         return jsonify({"error": "Invalid input format", "details": str(e)}), 400
 
-   conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute("""
