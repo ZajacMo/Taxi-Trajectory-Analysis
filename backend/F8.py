@@ -8,6 +8,7 @@ from flask import Flask, request, jsonify
 import sqlite3
 import math
 from collections import defaultdict, Counter
+from coordTransform import wgs84_to_gcj02
 
 # 初始化Flask应用
 app = Flask(__name__)
@@ -90,40 +91,37 @@ def frequent_paths_ab():
 
     # 初始化轨迹处理变量
     current_id = None  # 当前处理的出租车ID
-    current_trail = []  # 当前出租车的完整轨迹
     insideA = False  # 标记是否进入区域A
     segment = []  # 当前处理的路径段
 
     # 遍历所有轨迹点
     for taxi_id, time, lng, lat in rows:
-        point = {"lat": lat, "lng": lng, "time": time}
 
         # 如果切换到新的出租车，重置相关变量
         if taxi_id != current_id:
             current_id = taxi_id
             insideA = False
-            current_trail = []
             segment = []
 
-        # 将当前点加入完整轨迹
-        current_trail.append(point)
-
         # 路径段处理逻辑
-        if not insideA:
+        if not insideA and point_in_rect(lng, lat, ltA, rbA):
             # 如果进入区域A，开始记录路径段
-            if point_in_rect(lng, lat, ltA, rbA):
-                insideA = True
-                segment = [point]
-        else:
-            # 继续记录路径段
-            segment.append(point)
-            # 如果到达区域B，完成路径段统计
+            insideA = True
+            segment = []
+        if insideA:
+            # 加入轨迹点（GCJ-02 转换后）
+            lng_gcj, lat_gcj = wgs84_to_gcj02(lat, lng)
+            segment.append({
+                "lat": lat_gcj,
+                "lng": lng_gcj,
+                "time": time
+            })
             if point_in_rect(lng, lat, ltB, rbB):
                 path_key = encode_path(segment)
                 result_counter[path_key] += 1
                 if path_key not in path_samples:
                     path_samples[path_key] = segment[:]
-                insideA = False
+                insideA = False  # 结束当前路径
                 segment = []
 
     # 获取出现次数最多的前K条路径
