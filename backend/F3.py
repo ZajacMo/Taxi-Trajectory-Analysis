@@ -15,6 +15,7 @@
 from flask import Flask, request, jsonify
 import sqlite3
 import datetime
+from coordTransform import wgs84_to_gcj02
 
 # 初始化Flask应用
 app = Flask(__name__)
@@ -22,59 +23,9 @@ app = Flask(__name__)
 # 数据库路径
 DB_PATH = "trajectory.db"
 
-def query_trajectory(start_time, end_time, lt_point, rb_point):
-    """
-    查询指定时间和区域内的出租车轨迹
-
-    参数：
-        start_time (datetime): 查询开始时间
-        end_time (datetime): 查询结束时间
-        lt_point (list): 区域左上角坐标 [经度, 纬度]
-        rb_point (list): 区域右下角坐标 [经度, 纬度]
-
-    返回：
-        dict: 包含出租车ID及其轨迹的字典，格式为：
-            {
-                taxi_id: [
-                    {
-                        "time": 时间,
-                        "lng": 经度,
-                        "lat": 纬度
-                    }
-                ]
-            }
-    """
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    start_str = start_time.strftime("%Y-%m-%d %H:%M:%S")
-    end_str = end_time.strftime("%Y-%m-%d %H:%M:%S")
-
-    min_lng, max_lng = lt_point[0], rb_point[0]
-    min_lat, max_lat = rb_point[1], lt_point[1]
-
-    cursor.execute(f"""
-        SELECT d.taxi_id, d.time, d.lng, d.lat
-        FROM traj_index AS i
-        JOIN traj_data AS d ON d.point_id = i.point_id
-        WHERE
-            i.min_lng >= ? AND i.max_lng <= ?
-            AND i.min_lat >= ? AND i.max_lat <= ?
-            AND d.time BETWEEN ? AND ?
-        """, (min_lng, max_lng, min_lat, max_lat, start_str, end_str))
-
-    result = {}
-    for taxi_id, time, lng, lat in cursor.fetchall():
-        if taxi_id not in result:
-            result[taxi_id] = []
-        result[taxi_id].append({
-            "time": time,
-            "lng": lng,
-            "lat": lat
-        })
-
-    conn.close()
-    return result
+def transform_wgs84_to_gcj02_point(lat, lng):
+    lng_gcj, lat_gcj = wgs84_to_gcj02(lat, lng)
+    return lng_gcj, lat_gcj
 
 @app.route('/query_region', methods=['POST'])
 def query_region():
@@ -110,14 +61,41 @@ def query_region():
     except Exception as e:
         return jsonify({"error": "Invalid input format", "details": str(e)}), 400
 
-    result = query_trajectory(start_time, end_time, lt_point, rb_point)
+   conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
 
-    # 组装返回
-    response = {
+    cursor.execute("""
+        SELECT d.taxi_id, d.time, d.lng, d.lat
+        FROM traj_index AS i
+        JOIN traj_data AS d ON d.point_id = i.point_id
+        WHERE
+            i.min_lng >= ? AND i.max_lng <= ?
+            AND i.min_lat >= ? AND i.max_lat <= ?
+            AND d.time BETWEEN ? AND ?
+    """, (
+        lt_point[0], rb_point[0],
+        rb_point[1], lt_point[1],
+        start_time.strftime("%Y-%m-%d %H:%M:%S"),
+        end_time.strftime("%Y-%m-%d %H:%M:%S")
+    ))
+
+    result = {}
+    for taxi_id, time, lng, lat in cursor.fetchall():
+        lng_gcj, lat_gcj = transform_wgs84_to_gcj02_point(lat, lng)
+        if taxi_id not in result:
+            result[taxi_id] = []
+        result[taxi_id].append({
+            "time": time,
+            "lng": lng_gcj,
+            "lat": lat_gcj
+        })
+
+    conn.close()
+
+    return jsonify({
         "total": len(result),
         "path": [{"id": taxi_id, "trail": trail} for taxi_id, trail in result.items()]
-    }
-    return jsonify(response)
+    })
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0',debug=True, port=5000)
