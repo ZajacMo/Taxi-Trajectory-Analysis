@@ -1,79 +1,93 @@
-import json
+from flask import Flask, request, jsonify
 import os
-from collections import defaultdict
 import math
+from collections import defaultdict
+from coordTransform_utils import wgs84_to_gcj02
+from multiprocessing import Pool, cpu_count
 
-def process_taxi_data(folder_path, r):
-    """
-    处理出租车轨迹数据，生成热力图所需的数据格式
+app = Flask(__name__)
 
-    参数:
-        folder_path (str): 包含出租车轨迹数据的文件夹路径
-        r (float): 网格宽度参数，用于划分地理网格
-
-    返回:
-        list: 包含热力图点数据的列表，每个元素是一个字典，包含经纬度、时间和计数
-    """
-    # 使用defaultdict统计每个(经度, 纬度, 小时)三元组的出现次数
-    # 键格式: (center_lng, center_lat, hour)
-    # 值: 该位置在该小时内的车流量
-    grid_data = defaultdict(int)
+def process_file(params):
+    """处理单个文件的核心函数（修正参数接收方式）"""
+    filename, folder_path, r, target_hour = params  # 解包参数
+    file_counts = defaultdict(int)
     
-    # 遍历指定文件夹中的所有txt文件，处理每个文件中的轨迹数据
-    for filename in os.listdir(folder_path):
-        if filename.endswith('.txt'):
-            with open(os.path.join(folder_path, filename), 'r') as file:
-                for line in file:
-                    parts = line.strip().split(',')
-                    if len(parts) < 4:
-                        continue
-                    
-                    # 解析每行数据，提取时间、经度和纬度信息
-                    _, time_str, lng_str, lat_str = parts[:4]
-                    try:
-                        lng = float(lng_str)
-                        lat = float(lat_str)
-                        
-                        # 从时间字符串中提取小时信息，用于时间维度统计
-                        time_parts = time_str.split(' ')
-                        if len(time_parts) < 2:
-                            continue
-                        date_part, time_part = time_parts
-                        hour = int(time_part.split(':')[0])
-                        
-                        # 根据网格宽度r，计算当前坐标所在的网格编号
-                        grid_x = math.floor(lng / r)
-                        grid_y = math.floor(lat / r)
-                        
-                        # 计算网格中心点坐标，作为该网格的代表位置
-                        center_lng = (grid_x + 0.5) * r
-                        center_lat = (grid_y + 0.5) * r
-                        
-                        # 以(网格中心经度, 网格中心纬度, 小时)为键，统计车流量
-                        grid_data[(center_lng, center_lat, hour)] += 1
-                    except ValueError:
-                        continue
+    with open(os.path.join(folder_path, filename), 'r') as file:
+        for line in file:
+            parts = line.strip().split(',')
+            if len(parts) < 4:
+                continue
+            
+            try:
+                _, time_str, lng_str, lat_str = parts[:4]
+                hour = int(time_str.split(' ')[1].split(':')[0])
+                
+                # 时间过滤
+                if target_hour is not None and hour != target_hour:
+                    continue
+                
+                # 坐标转换和网格化
+                lng, lat = wgs84_to_gcj02(float(lng_str), float(lat_str))
+                grid_x, grid_y = math.floor(lng / r), math.floor(lat / r)
+                center_lng, center_lat = (grid_x + 0.5) * r, (grid_y + 0.5) * r
+                
+                file_counts[(center_lng, center_lat)] += 1
+            except (ValueError, IndexError):
+                continue
+                
+    return file_counts
+
+def process_taxi_data(folder_path, r, target_hour=None):
+    """优化后的主处理函数"""
+    files = [f for f in os.listdir(folder_path) if f.endswith('.txt')]
+    if not files:
+        return []
     
-    # 将统计结果转换为热力图点数据格式，每个点包含位置、时间和车流量
-    heat_points = []
-    for (lng, lat, time), count in grid_data.items():
-        heat_points.append({
-            "lat": lat,
-            "lng": lng,
-            "count": count,
-            "time": time
+    # 准备参数列表（每个元素是包含所有参数的元组）
+    params_list = [(f, folder_path, r, target_hour) for f in files]
+    
+    # 并行处理（使用map而不是starmap）
+    with Pool(processes=min(cpu_count(), 4)) as pool:  # 限制最大进程数
+        results = pool.map(process_file, params_list)
+    
+    # 合并结果
+    total_counts = defaultdict(int)
+    for file_result in results:
+        for point, count in file_result.items():
+            total_counts[point] += count
+    
+    return [{
+        "lng": lng,
+        "lat": lat,
+        "count": count
+    } for (lng, lat), count in total_counts.items()]
+
+@app.route('/api/heatmap', methods=['GET'])
+def get_heatmap_data():
+    # 参数获取
+    folder_path = request.args.get('folder_path', 'taxi_log_2008_by_id')
+    grid_width = float(request.args.get('grid_width', 0.01))
+    
+    # 时间参数（0~23的整数）
+    hour_param = request.args.get('hour')
+    target_hour = None
+    if hour_param and hour_param.isdigit():
+        hour = int(hour_param)
+        if 0 <= hour <= 23:
+            target_hour = hour
+    
+    try:
+        result = process_taxi_data(folder_path, grid_width, target_hour)
+        return jsonify({
+            "status": "success",
+            "data": result,
+            "params": {
+                "grid_width": grid_width,
+                "hour": target_hour if target_hour is not None else "全部时段"
+            }
         })
-    
-    return heat_points
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
-# 示例使用
 if __name__ == "__main__":
-    # 参数设置
-    folder_path = "taxi_log_2008_by_id"  # 替换为实际的文件夹路径
-    grid_width = 0.01   # 网格宽度参数r
-    
-    # 处理数据
-    result = process_taxi_data(folder_path, grid_width)
-    
-    # 输出JSON格式结果
-    print(json.dumps(result, indent=2))
+    app.run(host='0.0.0.0', port=5000, debug=True)
