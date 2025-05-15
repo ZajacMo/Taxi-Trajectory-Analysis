@@ -3,6 +3,7 @@ import VueRouter from "vue-router";
 import AreaSearchView from "@/views/AreaSearchView.vue";
 import DensityView from "@/views/DensityView.vue";
 import FrequencView from "@/views/FrequencView.vue";
+import AssociationView from "@/views/AssociationView.vue";
 
 Vue.use(VueRouter);
 
@@ -25,6 +26,11 @@ const routes = [
     path: "/frequency",
     name: "Frequency",
     component: FrequencView,
+  },
+  {
+    path: "/association",
+    name: "Association",
+    component: AssociationView,
   },
   {
     path: "*",

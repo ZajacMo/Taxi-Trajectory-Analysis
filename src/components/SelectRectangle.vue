@@ -42,6 +42,7 @@ export default {
       deep: true, // 深度监听
     },
   },
+
   methods: {
     pickPoint() {
       if (this.map.markerLayer) {

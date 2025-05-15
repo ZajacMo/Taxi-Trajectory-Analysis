@@ -75,7 +75,7 @@ export default {
         { index: "/", label: "轨迹展示" },
         { index: "/statistics", label: "范围统计" },
         { index: "/density", label: "车流密度" },
-        { index: "association", label: "区域关联分析" },
+        { index: "/association", label: "区域关联分析" },
         { index: "/frequency", label: "频繁路径分析" },
         { index: "/time", label: "通时行间分析" },
         { index: "/admin", label: "登录信息", icon: "el-icon-menu" },
