@@ -3,6 +3,7 @@ import sqlite3
 import hashlib
 import math
 from collections import defaultdict, Counter
+from coordTransform import wgs84_to_gcj02
 
 app = Flask(__name__)
 DB_PATH = "trajectory.db"
@@ -91,6 +92,7 @@ def frequent_paths():
     path_samples = {}
 
     for taxi_id, time, lng, lat in rows:
+         lng_gcj, lat_gcj = wgs84_to_gcj02(lat, lng)
         point = {"lat": lat, "lng": lng, "time": time}
         if taxi_id != current_id:
             if len(current_trail) >= 2:
