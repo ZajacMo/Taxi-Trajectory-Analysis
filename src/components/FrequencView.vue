@@ -1,20 +1,20 @@
 <template>
   <div class="frequency-search-form">
-    <el-form :model="form" label-width="5em">
-      <el-form-item label="最小距离">
-        <el-input
-          v-model="form.minDistance"
-          placeholder="请输入最小距离"
-        ></el-input>
-      </el-form-item>
-      <el-form-item label="路径数">
-        <el-input-number
-          v-model="form.pathCount"
-          :min="1"
-          :precision="0"
-        ></el-input-number>
-      </el-form-item>
-    </el-form>
+    <div class="position-input">
+      最小距离
+      <el-input
+        v-model="form.minDistance"
+        placeholder="请输入最小距离"
+      ></el-input>
+    </div>
+    <div class="position-input">
+      路径数
+      <el-input-number
+        v-model="form.pathCount"
+        :min="1"
+        :precision="0"
+      ></el-input-number>
+    </div>
   </div>
 </template>
 
@@ -25,7 +25,7 @@ export default {
     return {
       form: {
         minDistance: "",
-        pathCount: 1,
+        pathCount: 10,
       },
     };
   },
@@ -43,8 +43,15 @@ export default {
 </script>
 
 <style scoped>
-.el-input {
-  padding-right: 20px;
+div.el-input {
+  width: 70%;
+  margin: auto;
+  display: block;
+}
+div.position-input {
+  display: inline-flex;
+  align-items: center;
+  width: 50%;
 }
 .frequency-search-form {
   padding: 0px;

@@ -1,21 +1,28 @@
 <template>
-  <el-form :ref="area" :model="area" label-width="3em">
-    <h4>{{ area.nw.label }}</h4>
-    <el-form-item label="纬度" prop="lat">
-      <el-input v-model="area.nw.point.lat" placeholder="请输入纬度" />
-    </el-form-item>
-    <el-form-item label="经度" prop="lng">
-      <el-input v-model="area.nw.point.lng" placeholder="请输入经度" />
-    </el-form-item>
+  <div>
+    <div>
+      <h4>{{ area.nw.label }}</h4>
+      <div class="position-input">
+        纬度
+        <el-input v-model="area.nw.point.lat" placeholder="请输入纬度" />
+      </div>
+      <div class="position-input">
+        经度
+        <el-input v-model="area.nw.point.lng" placeholder="请输入经度" />
+      </div>
+    </div>
+
     <h4>{{ area.se.label }}</h4>
-    <el-form-item label="纬度" prop="lat">
+    <div class="position-input">
+      纬度
       <el-input v-model="area.se.point.lat" placeholder="请输入纬度" />
-    </el-form-item>
-    <el-form-item label="经度" prop="lng">
+    </div>
+    <div class="position-input">
+      经度
       <el-input v-model="area.se.point.lng" placeholder="请输入经度" />
-    </el-form-item>
-    <el-button @click="pickPoint">地图选点</el-button>
-  </el-form>
+    </div>
+    <el-button @click="pickPoint"  type="primary" plain>地图选点</el-button>
+  </div>
 </template>
 <script>
 import { mapState } from "vuex";
@@ -96,7 +103,6 @@ export default {
       this.map.editor.setActionMode(this.map.mode.interact); // 进入编辑模式
     },
     setBox(nw = { lng: "", lat: "" }, se = { lng: "", lat: "" }) {
-      // 输出当前组件id
       // 框选后自动填入
       this.area.nw.point = { lng: nw.lng, lat: nw.lat };
       this.area.se.point = { lng: se.lng, lat: se.lat };
@@ -105,3 +111,24 @@ export default {
   },
 };
 </script>
+<style scoped>
+div {
+  /* padding-right: 20px; */
+  /* width:45%; */
+  margin:0;
+  margin-bottom: 10px;
+  div.position-input {
+    display: inline-flex;
+    align-items: center;
+    width: 50%;
+  }
+}
+.el-input{
+  width: 80%;
+  margin: auto; 
+  display: block; 
+}
+h4 {
+  margin: 0;
+}
+</style>

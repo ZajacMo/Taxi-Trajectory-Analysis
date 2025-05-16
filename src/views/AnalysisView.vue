@@ -4,7 +4,7 @@
     <ModeAndAreaSwitch @select-change="(newVal) => (selected = newVal)" />
 
     <!-- 频繁路径分析 -->
-    <Frequenc-view v-if="selected.mode === '频繁路径分析'" />
+    <frequenc-view v-if="selected.mode === '频繁路径分析'" />
 
     <!-- 区域1坐标 -->
     <div
@@ -22,7 +22,7 @@
         </h3>
         <h3 v-else>区域</h3>
       </el-divider>
-      <select-rectangle @area-change="handleArea1Change" />
+      <select-rectangle @area-change="handleArea1Change" ref="area1" />
     </div>
 
     <!-- 区域2坐标 -->
@@ -34,7 +34,7 @@
       "
     >
       <el-divider><h3>区域2</h3></el-divider>
-      <select-rectangle @area-change="handleArea2Change" />
+      <select-rectangle @area-change="handleArea2Change" ref="area2" />
     </div>
 
     <!-- 时间选择器 -->
@@ -84,6 +84,7 @@ export default {
         "频繁路径分析",
         "通时行间分析",
       ],
+      tableData: [],
       timeRange: [],
     };
   },
@@ -99,6 +100,9 @@ export default {
     clearAll() {
       // 清空所有区域
       // this.$store.commit("RESET_MARKERLAYER");
+      this.$refs.area1.setBox();
+      this.$refs.area2.setBox();
+      this.$store.commit("RESET_MARKERLAYER");
     },
     confirm() {
       // 确认按钮点击事件
@@ -107,18 +111,15 @@ export default {
   },
 };
 </script>
-<style>
-.el-input {
+<style scoped>
+/* .el-input {
   padding-right: 20px;
-}
+} */
 .association-view {
   padding: 40px;
   padding-top: 0;
 }
 h3 {
-  margin: 0;
-}
-h4 {
   margin: 0;
 }
 </style>

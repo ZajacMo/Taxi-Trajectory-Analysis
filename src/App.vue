@@ -60,7 +60,7 @@ body {
   min-width: calc(100vw - 600px);
 }
 #router {
-  width: 20%;
+  width: 30%;
   height: 100%;
   background-color: white;
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);

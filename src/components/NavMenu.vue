@@ -145,7 +145,7 @@ export default {
   left: 32px;
   z-index: 1500;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  border-radius: 6px;
+  /* border-radius: 12px; */
 }
 .el-menu-demo {
   border-radius: 6px;
