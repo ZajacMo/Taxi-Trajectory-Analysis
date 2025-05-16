@@ -38,15 +38,16 @@
     </div>
 
     <!-- 时间选择器 -->
-    <el-time-picker
+    <el-date-picker
       v-if="selected.mode === '区域范围查找'"
-      v-model="timeRange"
-      is-range
-      range-separator="至"
+      v-model="dateRange"
+      type="datetimerange"
       start-placeholder="开始时间"
       end-placeholder="结束时间"
-      size="medium"
-    ></el-time-picker>
+      :picker-options="pickerOptions"
+      size="small"
+      align="right"
+    />
 
     <div style="padding-top: 20px">
       <el-button type="danger" @click="clearAll">清空</el-button>
@@ -77,15 +78,34 @@ export default {
         radio: "单区域",
         mode: "区域范围查找",
       },
-      radioList: ["单区域", "两区域"],
-      selectList: [
+      radioOptions: ["单区域", "两区域"],
+      selectOptions: [
         "区域范围查找",
         "区域关联分析",
         "频繁路径分析",
         "通时行间分析",
       ],
+      pickerOptions: {
+        shortcuts: [
+          {
+            text: "今天",
+            onClick(picker) {
+              picker.$emit("pick", [new Date(), new Date()]);
+            },
+          },
+          {
+            text: "最近一周",
+            onClick(picker) {
+              const end = new Date();
+              const start = new Date();
+              start.setDate(start.getDate() - 7);
+              picker.$emit("pick", [start, end]);
+            },
+          },
+        ],
+      },
       tableData: [],
-      timeRange: [],
+      dateRange: null,
     };
   },
   methods: {
