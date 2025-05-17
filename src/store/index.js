@@ -22,6 +22,7 @@ export default new Vuex.Store({
       options: [],
       data: [],
     },
+    refresh: false,
   },
   mutations: {
     SET_MAP(state, item) {
@@ -149,10 +150,83 @@ export default new Vuex.Store({
       }
       commit("SET_TRAILS", { loading: false });
     },
-    // async fetchFrequencePath({ commit }, { frequence, area1, area2 }) {
-    //   commit("SET_TRAILS", { loading: true });
-
-    // },
+    async fetchFrequencePath({ commit }, { frequence }) {
+      commit("SET_TRAILS", { loading: true });
+      try {
+        const response = await fetch("/api/frequent_paths", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            minDistance: parseInt(frequence.minDistance),
+            k: frequence.pathCount,
+          }),
+        });
+        var data = await response.json();
+        console.log(data);
+      } catch (error) {
+        console.error("请求 /frequent_paths 时出错:", error);
+      }
+      commit("SET_TRAILS", { loading: false });
+    },
+    async fetchFrequencePath2({ commit }, { frequence, area1, area2 }) {
+      commit("SET_TRAILS", { loading: true });
+      try {
+        const response = await fetch("/api/frequent_paths_ab", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            k: frequence.pathCount,
+            areaA: {
+              ltPoint: [area1.nw.point.lng, area1.nw.point.lat],
+              rbPoint: [area1.se.point.lng, area1.se.point.lat],
+            },
+            areaB: {
+              ltPoint: [area2.nw.point.lng, area2.nw.point.lat],
+              rbPoint: [area2.se.point.lng, area2.se.point.lat],
+            },
+          }),
+        });
+        var data = await response.json();
+        console.log(data);
+      } catch (error) {
+        console.error("请求 /flow_analysi 时出错:", error);
+      }
+      commit("SET_TRAILS", { loading: false });
+    },
+    async fetchTimeSpaceAnalysis({ commit }, { area1, area2 }) {
+      commit("SET_TRAILS", { loading: true });
+      try {
+        const params = {
+          area1: `${area1.nw.point.lng},${area1.se.point.lng},${area1.se.point.lat},${area1.nw.point.lat}`,
+          area2: `${area2.nw.point.lng},${area2.se.point.lng},${area2.se.point.lat},${area2.nw.point.lat}`,
+        };
+        const queryString = Object.entries(params)
+          .map(
+            ([key, value]) =>
+              `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+          )
+          .join("&");
+        const url = `/api/optimized_path?${queryString}`;
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        });
+        var data = await response.json();
+        console.log(data);
+      } catch (error) {
+        console.error("请求 /flow_analysi 时出错:", error);
+      }
+      commit("SET_TRAILS", { loading: false });
+    },
   },
   modules: {},
 });

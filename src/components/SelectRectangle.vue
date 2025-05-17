@@ -28,6 +28,12 @@
 import { mapState } from "vuex";
 export default {
   name: "SelectRectangle",
+  props: {
+    id: {
+      type: String,
+      required: true,
+    },
+  },
   data() {
     return {
         area: {
@@ -42,7 +48,8 @@ export default {
   watch: {
     area: {
       handler(newVal) {
-        this.$emit("area-changed", newVal);
+        // console.log(`area${this.id}-changed`, newVal);
+        this.$emit(`area${this.id}-changed`, newVal);
         // 可以在这里添加一些逻辑
       },
       deep: true, // 深度监听

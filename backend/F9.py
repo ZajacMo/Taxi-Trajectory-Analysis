@@ -98,7 +98,7 @@ def process_single_trajectory(trajectory, area1, area2, hourly_stats):
             
             break
 
-@app.route('/api/optimized_path', methods=['GET'])
+@app.route('/optimized_path', methods=['GET'])
 def analyze_shortest_path():
     """优化后的API端点"""
     start_time = time.time()

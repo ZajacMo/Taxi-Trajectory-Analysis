@@ -8,10 +8,11 @@
     <ModeAndAreaSwitch @select-change="(newVal) => (selected = newVal)" />
 
     <!-- 频繁路径分析 -->
-    <frequenc-view
+    <frequence-view
       :selected="selected"
       @frequence-changed="(newVal) => (form.frequence = newVal)"
-      v-if="selected.mode === '频繁路径分析'"
+      v-show="selected.mode === '频繁路径分析'"
+      ref="frequenceView"
     />
 
     <!-- 区域1坐标 -->
@@ -31,12 +32,13 @@
         <h3 v-else>区域</h3>
       </el-divider>
       <select-rectangle
-        @area-changed="
+        id="1"
+        @area1-changed="
           (newVal) => {
             form.area1 = newVal;
           }
         "
-        ref="form.area1"
+        ref="area1"
       />
     </div>
 
@@ -50,12 +52,13 @@
     >
       <el-divider><h3>区域2</h3></el-divider>
       <select-rectangle
-        @area-change="
+        id="2"
+        @area2-changed="
           (newVal) => {
             form.area2 = newVal;
           }
         "
-        ref="form.area2"
+        ref="area2"
       />
     </div>
 
@@ -84,13 +87,13 @@
 <script>
 import { mapState } from "vuex";
 import SelectRectangle from "@/components/SelectRectangle.vue";
-import FrequencView from "@/components/FrequencView.vue";
+import FrequenceView from "@/components/FrequenceView.vue";
 import ModeAndAreaSwitch from "@/components/ModeAndAreaSwitch.vue";
 export default {
   name: "AnalysisView",
   components: {
     SelectRectangle,
-    FrequencView,
+    FrequenceView,
     ModeAndAreaSwitch,
   },
   computed: {
@@ -109,9 +112,10 @@ export default {
       },
       form: {
         dateRange: null,
-        // timeRange: null,
-        frequence: null,
-        pathCount: "10",
+        frequence: {
+          minDistance: "",
+          pathCount: 10,
+        },
         area1: null,
         area2: null,
       },
@@ -145,6 +149,8 @@ export default {
       // this.$store.commit("RESET_MARKERLAYER");
       this.$refs.area1.setBox();
       this.$refs.area2.setBox();
+      this.$refs.frequenceView.clearForm();
+      this.form.dateRange = null;
       this.$store.commit("RESET_MARKERLAYER");
     },
 
@@ -155,21 +161,30 @@ export default {
           area: this.form.area1,
         });
       } else if (this.selected.mode === "区域关联分析") {
-        console.log("区域关联分析");
+        // console.log("区域关联分析");
         this.$store.dispatch("fetchAreaAssociation", {
           area1: this.form.area1,
           area2: this.form.area2,
         });
       } else if (this.selected.mode === "频繁路径分析") {
-        if (this.selected.radio === "两区域") {
+        if (this.selected.radio === "单区域") {
+          console.log("单区域分析", this.form.frequence);
           this.$store.dispatch("fetchFrequencePath", {
+            frequence: this.form.frequence,
+          });
+        } else {
+          console.log("两区域分析", this.form);
+          this.$store.dispatch("fetchFrequencePath2", {
             frequence: this.form.frequence,
             area1: this.form.area1,
             area2: this.form.area2,
           });
-        } else {
-          console.log("其他分析");
         }
+      } else {
+        this.$store.dispatch("fetchTimeSpaceAnalysis", {
+          area1: this.form.area1,
+          area2: this.form.area2,
+        });
       }
     },
   },
