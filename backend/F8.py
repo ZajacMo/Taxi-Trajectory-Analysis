@@ -8,7 +8,7 @@ from flask import Flask, request, jsonify
 import sqlite3
 import math
 from collections import defaultdict, Counter
-from coordTransform import wgs84_to_gcj02
+from coordTransform import wgs84_to_gcj02,gcj02_to_wgs84
 
 # 初始化Flask应用
 app = Flask(__name__)
@@ -31,6 +31,12 @@ def point_in_rect(lng, lat, lt, rb):
     """
     return lt[0] <= lng <= rb[0] and rb[1] <= lat <= lt[1]
 
+def transform_wgs84_to_gcj02_point(lng, lat):
+    return wgs84_to_gcj02(lng, lat)
+
+def transform_gcj02_to_wgs84_point(lng, lat):
+    return gcj02_to_wgs84(lng, lat)
+    
 def encode_path(trail, grid_size=0.001):
     """
     对轨迹进行网格化编码
@@ -73,10 +79,11 @@ def frequent_paths_ab():
     # 验证输入参数
     if not areaA or not areaB:
         return jsonify({"error": "Missing areaA or areaB"}), 400
-
-    # 获取区域A和B的边界坐标
-    ltA, rbA = areaA["ltPoint"], areaA["rbPoint"]
-    ltB, rbB = areaB["ltPoint"], areaB["rbPoint"]
+        
+    ltA_wgs = transform_gcj02_to_wgs84_point(*areaA["ltPoint"])
+    rbA_wgs = transform_gcj02_to_wgs84_point(*areaA["rbPoint"])
+    ltB_wgs = transform_gcj02_to_wgs84_point(*areaB["ltPoint"])
+    rbB_wgs = transform_gcj02_to_wgs84_point(*areaB["rbPoint"])
 
     # 连接数据库并查询所有轨迹数据
     conn = sqlite3.connect(DB_PATH)
@@ -86,7 +93,7 @@ def frequent_paths_ab():
     conn.close()
 
     # 初始化统计变量
-    result_counter = Counter()  # 用于统计路径出现次数
+    path_counter = Counter()  # 用于统计路径出现次数
     path_samples = {}  # 用于存储路径样本
 
     # 初始化轨迹处理变量
@@ -95,37 +102,39 @@ def frequent_paths_ab():
     segment = []  # 当前处理的路径段
 
     # 遍历所有轨迹点
-    for taxi_id, time, lng, lat in rows:
+    def add_path_if_valid(trail):
+        if len(trail) >= 2:
+            key = encode_path(trail)
+            path_counter[key] += 1
+            if key not in path_samples:
+                path_samples[key] = trail[:]
 
-        # 如果切换到新的出租车，重置相关变量
+    for taxi_id, time, lng_wgs, lat_wgs in rows:
         if taxi_id != current_id:
             current_id = taxi_id
             insideA = False
             segment = []
 
-        # 路径段处理逻辑
-        if not insideA and point_in_rect(lng, lat, ltA, rbA):
-            # 如果进入区域A，开始记录路径段
+        if not insideA and point_in_rect(lng_wgs, lat_wgs, ltA_wgs, rbA_wgs):
             insideA = True
             segment = []
+
         if insideA:
-            # 加入轨迹点（GCJ-02 转换后）
-            lng_gcj, lat_gcj = wgs84_to_gcj02(lat, lng)
+            lng_gcj, lat_gcj = transform_wgs84_to_gcj02_point(lng_wgs, lat_wgs)
             segment.append({
                 "lat": lat_gcj,
                 "lng": lng_gcj,
                 "time": time
             })
-            if point_in_rect(lng, lat, ltB, rbB):
-                path_key = encode_path(segment)
-                result_counter[path_key] += 1
-                if path_key not in path_samples:
-                    path_samples[path_key] = segment[:]
-                insideA = False  # 结束当前路径
+
+            if point_in_rect(lng_wgs, lat_wgs, ltB_wgs, rbB_wgs):
+                add_path_if_valid(segment)
+                insideA = False
                 segment = []
 
+
     # 获取出现次数最多的前K条路径
-    top_paths = result_counter.most_common(top_k)
+    top_paths = path_counter.most_common(top_k)
 
     # 构建响应数据
     response = []
@@ -137,7 +146,7 @@ def frequent_paths_ab():
 
     # 返回JSON响应
     return jsonify({
-        "total": len(result_counter),  # 总路径数
+        "total": len(path_counter),  # 总路径数
         "topK": top_k,  # 请求的Top-K值
         "result": response  # 最频繁路径列表
     })
