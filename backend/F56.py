@@ -99,7 +99,7 @@ def process_file_optimized(args):
     finally:
         existing_shm.close()
 
-@app.route('/api/flow_analysis', methods=['GET'])
+@app.route('/flow_analysis', methods=['GET'])
 def analyze_flow():
     """优化后的API端点"""
     try:

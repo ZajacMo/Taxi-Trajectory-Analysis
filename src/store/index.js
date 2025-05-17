@@ -119,6 +119,40 @@ export default new Vuex.Store({
       }
       commit("SET_TRAILS", { loading: false });
     },
+    async fetchAreaAssociation({ commit }, { area1, area2 }) {
+      commit("SET_TRAILS", { loading: true });
+      try {
+        const params = {
+          area1: `${area1.nw.point.lng},${area1.se.point.lng},${area1.se.point.lat},${area1.nw.point.lat}`,
+        };
+        if (area2) {
+          params.area2 = `${area2.nw.point.lng},${area2.se.point.lng},${area2.se.point.lat},${area2.nw.point.lat}`;
+        }
+        const queryString = Object.entries(params)
+          .map(
+            ([key, value]) =>
+              `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+          )
+          .join("&");
+        const url = `/api/flow_analysis?${queryString}`;
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        });
+        var data = await response.json();
+        console.log(data);
+      } catch (error) {
+        console.error("请求 /flow_analysi 时出错:", error);
+      }
+      commit("SET_TRAILS", { loading: false });
+    },
+    // async fetchFrequencePath({ commit }, { frequence, area1, area2 }) {
+    //   commit("SET_TRAILS", { loading: true });
+
+    // },
   },
   modules: {},
 });

@@ -155,10 +155,21 @@ export default {
           area: this.form.area1,
         });
       } else if (this.selected.mode === "区域关联分析") {
+        console.log("区域关联分析");
         this.$store.dispatch("fetchAreaAssociation", {
           area1: this.form.area1,
           area2: this.form.area2,
         });
+      } else if (this.selected.mode === "频繁路径分析") {
+        if (this.selected.radio === "两区域") {
+          this.$store.dispatch("fetchFrequencePath", {
+            frequence: this.form.frequence,
+            area1: this.form.area1,
+            area2: this.form.area2,
+          });
+        } else {
+          console.log("其他分析");
+        }
       }
     },
   },
