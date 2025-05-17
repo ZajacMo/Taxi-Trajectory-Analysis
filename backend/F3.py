@@ -15,7 +15,7 @@
 from flask import Flask, request, jsonify
 import sqlite3
 import datetime
-from coordTransform import wgs84_to_gcj02
+from coordTransform import wgs84_to_gcj02,gcj02_to_wgs84
 
 # 初始化Flask应用
 app = Flask(__name__)
@@ -24,8 +24,10 @@ app = Flask(__name__)
 DB_PATH = "trajectory.db"
 
 def transform_wgs84_to_gcj02_point(lng, lat):
-    lng_gcj, lat_gcj = wgs84_to_gcj02(lng, lat)
-    return lng_gcj, lat_gcj
+    return wgs84_to_gcj02(lng, lat)
+
+def transform_gcj02_to_wgs84_point(lng, lat):
+    return gcj02_to_wgs84(lng, lat)
 
 @app.route('/query_region', methods=['POST'])
 def query_region():
@@ -56,11 +58,14 @@ def query_region():
     try:
         start_time = datetime.datetime.strptime(req.get('startTime'), "%Y-%m-%d %H:%M:%S")
         end_time = datetime.datetime.strptime(req.get('endTime'), "%Y-%m-%d %H:%M:%S")
-        lt_point = req.get('ltPoint', [116.0, 40.0])
-        rb_point = req.get('rbPoint', [117.0, 39.0])
+        lt_gcj = req.get('ltPoint', [116.0, 40.0])
+        rb_gcj = req.get('rbPoint', [117.0, 39.0])
     except Exception as e:
         return jsonify({"error": "Invalid input format", "details": str(e)}), 400
 
+    lt_point = transform_gcj02_to_wgs84_point(lt_gcj[0], lt_gcj[1])
+    rb_point = transform_gcj02_to_wgs84_point(rb_gcj[0], rb_gcj[1])
+    
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
@@ -81,7 +86,7 @@ def query_region():
 
     result = {}
     for taxi_id, time, lng, lat in cursor.fetchall():
-        lng_gcj, lat_gcj = transform_wgs84_to_gcj02_point(lng, lat)
+        lng_gcj, lat_gcj = transform_wgs84_to_gcj02_point(lng_wgs, lat_wgs)
         if taxi_id not in result:
             result[taxi_id] = []
         result[taxi_id].append({
