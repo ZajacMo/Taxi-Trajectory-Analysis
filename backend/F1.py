@@ -222,7 +222,7 @@ def get_trails_post():
             trail = clean_trail(trail, simplify, tolerance)
             transformed_points = []
             for pt in trail.points:
-                new_lat, new_lng = wgs84_to_gcj02(pt.latitude, pt.longitude)
+                new_lng, new_lat = wgs84_to_gcj02(lng=pt.longitude,lat=pt.latitude)
                 transformed_points.append(TrailPoint(new_lat, new_lng, pt.timestamp))
             trail = TrailLine(taxi_id=trail.taxi_id, points=transformed_points)
             return {

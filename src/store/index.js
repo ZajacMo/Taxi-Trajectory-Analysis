@@ -98,7 +98,7 @@ export default new Vuex.Store({
           }),
         });
         var data = await response.json();
-        console.log(data);
+        // console.log(data);
         if (data.total === 0) {
           Notification({
             title: "错误",
