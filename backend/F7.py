@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify
 import sqlite3
-import hashlib
 import math
 from collections import defaultdict, Counter
 from coordTransform import wgs84_to_gcj02
@@ -8,6 +7,9 @@ from coordTransform import wgs84_to_gcj02
 app = Flask(__name__)
 DB_PATH = "trajectory.db"
 
+def transform_wgs84_to_gcj02_point(lng, lat):
+    lng_gcj, lat_gcj = wgs84_to_gcj02(lng, lat)
+    return lng_gcj, lat_gcj
 # 经纬度转换为大致距离（单位：米）
 def haversine(lat1, lng1, lat2, lng2):
     """
@@ -91,30 +93,26 @@ def frequent_paths():
     path_counter = Counter()
     path_samples = {}
 
+    def add_trail_if_valid(trail):
+        if len(trail) >= 2 and path_distance(trail) >= min_distance:
+            key = encode_path(trail)
+            path_counter[key] += 1
+            if key not in path_samples:
+                path_samples[key] = trail[:]
+
     for taxi_id, time, lng, lat in rows:
-         lng_gcj, lat_gcj = wgs84_to_gcj02(lat, lng)
-        point = {"lat": lat, "lng": lng, "time": time}
+        lng_gcj, lat_gcj = transform_wgs84_to_gcj02_point(lng, lat)
+        point = {"lat": lat_gcj, "lng": lng_gcj, "time": time}
+
         if taxi_id != current_id:
-            if len(current_trail) >= 2:
-                dist = path_distance(current_trail)
-                if dist >= min_distance:
-                    path_key = encode_path(current_trail)
-                    path_counter[path_key] += 1
-                    if path_key not in path_samples:
-                        path_samples[path_key] = current_trail[:]
-            current_id = taxi_id
+            add_trail_if_valid(current_trail)
             current_trail = [point]
+            current_id = taxi_id
         else:
             current_trail.append(point)
 
-    # 处理最后一个
-    if len(current_trail) >= 2:
-        dist = path_distance(current_trail)
-        if dist >= min_distance:
-            path_key = encode_path(current_trail)
-            path_counter[path_key] += 1
-            if path_key not in path_samples:
-                path_samples[path_key] = current_trail[:]
+    # 处理最后一个轨迹
+    add_trail_if_valid(current_trail)
 
     # 获取 Top-K
     top_paths = path_counter.most_common(top_k)
