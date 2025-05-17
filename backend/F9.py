@@ -161,11 +161,11 @@ def analyze_shortest_path():
                 "status": "success",
                 "processing_time": round(time.time() - start_time, 2),
                 "data": response_data,
-                "params": {
-                    "area1": area1,
-                    "area2": area2,
-                    "workers_used": workers
-                }
+                # "params": {
+                #     "area1": area1,
+                #     "area2": area2,
+                #     "workers_used": workers
+                # }
             })
     
     except Exception as e:

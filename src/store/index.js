@@ -70,8 +70,28 @@ export default new Vuex.Store({
         }
         const data = await response.json();
         commit("SET_TRAILS_DATA", data);
+        if (data.length === 0) {
+          Notification({
+            title: "消息",
+            message: "暂无轨迹",
+            type: "error",
+            duration: 5000,
+          });
+        } else {
+          Notification({
+            title: "成功",
+            message: `成功获取${data.length}条轨迹`,
+            type: "success",
+            duration: 5000,
+          });
+        }
       } catch (error) {
-        console.error("发送路线数据失败:", error);
+        Notification({
+          title: "错误",
+          message: "获取轨迹数据失败",
+          type: "error",
+          duration: 5000,
+        });
       } finally {
         commit("SET_TRAILS", { loading: false });
       }
@@ -102,23 +122,30 @@ export default new Vuex.Store({
         // console.log(data);
         if (data.total === 0) {
           Notification({
-            title: "错误",
+            title: "消息",
             message: "查询区域范围内无轨迹",
             type: "error",
+            duration: 10000,
           });
-          return;
         } else {
           commit("SET_TRAILS_DATA", data.path);
           Notification({
             title: "成功",
             message: `成功查询区域范围内${data.total}条轨迹`,
             type: "success",
+            duration: 10000,
           });
         }
       } catch (error) {
-        console.error("请求 /query_region 时出错:", error);
+        Notification({
+          title: "错误",
+          message: "查询区域范围内轨迹失败",
+          type: "error",
+          duration: 5000,
+        });
+      } finally {
+        commit("SET_TRAILS", { loading: false });
       }
-      commit("SET_TRAILS", { loading: false });
     },
     async fetchAreaAssociation({ commit }, { area1, area2 }) {
       commit("SET_TRAILS", { loading: true });
@@ -145,10 +172,26 @@ export default new Vuex.Store({
         });
         var data = await response.json();
         console.log(data);
+        if (data.status === "success") {
+          Notification({
+            title: "成功",
+            message: "查询区域关联关系成功",
+            type: "success",
+            duration: 5000,
+          });
+        } else {
+          throw new Error("查询区域关联关系失败");
+        }
       } catch (error) {
-        console.error("请求 /flow_analysi 时出错:", error);
+        Notification({
+          title: "错误",
+          message: "查询区域关联关系失败",
+          type: "error",
+          duration: 5000,
+        });
+      } finally {
+        commit("SET_TRAILS", { loading: false });
       }
-      commit("SET_TRAILS", { loading: false });
     },
     async fetchFrequencePath({ commit }, { frequence }) {
       commit("SET_TRAILS", { loading: true });
@@ -168,8 +211,9 @@ export default new Vuex.Store({
         console.log(data);
       } catch (error) {
         console.error("请求 /frequent_paths 时出错:", error);
+      } finally {
+        commit("SET_TRAILS", { loading: false });
       }
-      commit("SET_TRAILS", { loading: false });
     },
     async fetchFrequencePath2({ commit }, { frequence, area1, area2 }) {
       commit("SET_TRAILS", { loading: true });
@@ -195,9 +239,16 @@ export default new Vuex.Store({
         var data = await response.json();
         console.log(data);
       } catch (error) {
-        console.error("请求 /flow_analysi 时出错:", error);
+        // console.error("请求 /flow_analysi 时出错:", error);
+        Notification({
+          title: "错误",
+          message: "区域关联分析失败",
+          type: "error",
+          duration: 5000,
+        });
+      } finally {
+        commit("SET_TRAILS", { loading: false });
       }
-      commit("SET_TRAILS", { loading: false });
     },
     async fetchTimeSpaceAnalysis({ commit }, { area1, area2 }) {
       commit("SET_TRAILS", { loading: true });
@@ -221,11 +272,28 @@ export default new Vuex.Store({
           },
         });
         var data = await response.json();
-        console.log(data);
+        // console.log(data);
+        if (data.status === "success") {
+          Notification({
+            title: "成功",
+            message: "通行时间分析成功",
+            type: "success",
+            duration: 5000,
+          });
+        } else {
+          throw new Error("请求失败");
+        }
       } catch (error) {
-        console.error("请求 /flow_analysi 时出错:", error);
+        // console.error("请求 /flow_analysi 时出错:", error);
+        Notification({
+          title: "错误",
+          message: "通行时间分析失败",
+          type: "error",
+          duration: 5000,
+        });
+      } finally {
+        commit("SET_TRAILS", { loading: false });
       }
-      commit("SET_TRAILS", { loading: false });
     },
   },
   modules: {},

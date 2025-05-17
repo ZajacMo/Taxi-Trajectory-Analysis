@@ -25,7 +25,7 @@ export default {
   //检测路由地址从statistics离开而做出相应的操作
   watch: {
     $route(to, from) {
-      if (from.path === "/statistics") {
+      if (from.path === "/analysis") {
         if (this.$store.state.map.map) {
           this.$store.commit("RESET_MARKERLAYER");
         }

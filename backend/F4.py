@@ -62,7 +62,7 @@ def process_taxi_data(folder_path, r, target_hour=None):
         "count": count
     } for (lng, lat), count in total_counts.items()]
 
-@app.route('/api/heatmap', methods=['GET'])
+@app.route('/heatmap', methods=['GET'])
 def get_heatmap_data():
     # 参数获取
     folder_path = request.args.get('folder_path', 'taxi_log_2008_by_id')
