@@ -23,7 +23,7 @@ app = Flask(__name__)
 # 数据库路径
 DB_PATH = "trajectory.db"
 
-def transform_wgs84_to_gcj02_point(lat, lng):
+def transform_wgs84_to_gcj02_point(lng, lat):
     lng_gcj, lat_gcj = wgs84_to_gcj02(lng, lat)
     return lng_gcj, lat_gcj
 
@@ -81,7 +81,7 @@ def query_region():
 
     result = {}
     for taxi_id, time, lng, lat in cursor.fetchall():
-        lng_gcj, lat_gcj = transform_wgs84_to_gcj02_point(lat, lng)
+        lng_gcj, lat_gcj = transform_wgs84_to_gcj02_point(lng, lat)
         if taxi_id not in result:
             result[taxi_id] = []
         result[taxi_id].append({
