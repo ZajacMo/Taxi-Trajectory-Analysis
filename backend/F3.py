@@ -24,7 +24,7 @@ app = Flask(__name__)
 DB_PATH = "trajectory.db"
 
 def transform_wgs84_to_gcj02_point(lat, lng):
-    lng_gcj, lat_gcj = wgs84_to_gcj02(lat, lng)
+    lng_gcj, lat_gcj = wgs84_to_gcj02(lng, lat)
     return lng_gcj, lat_gcj
 
 @app.route('/query_region', methods=['POST'])
@@ -84,17 +84,18 @@ def query_region():
         lng_gcj, lat_gcj = transform_wgs84_to_gcj02_point(lat, lng)
         if taxi_id not in result:
             result[taxi_id] = []
-        result[taxi_id].append([lat_gcj, lng_gcj, datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S").timestamp()])
+        result[taxi_id].append({
+            "time": time,
+            "lng": lng_gcj,
+            "lat": lat_gcj
+        })
 
     conn.close()
 
     return jsonify({
         "total": len(result),
-        "path": [{
-            "vender":int(taxi_id),
-            "path":trail
-        } for taxi_id, trail in result.items()]
+        "path": [{"id": taxi_id, "trail": trail} for taxi_id, trail in result.items()]
     })
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0',debug=True, port=5000)
+    app.run(debug=True)
