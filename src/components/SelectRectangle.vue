@@ -42,7 +42,6 @@ export default {
   watch: {
     area: {
       handler(newVal) {
-        // console.log("area changed", newVal, oldVal);
         this.$emit("area-changed", newVal);
         // 可以在这里添加一些逻辑
       },

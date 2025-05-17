@@ -1,6 +1,6 @@
 <template>
   <div class="frequency-search-form">
-    <div class="position-input">
+    <div class="position-input" v-show="selected.radio === '两区域'">
       最小距离
       <el-input
         v-model="form.minDistance"
@@ -21,6 +21,12 @@
 <script>
 export default {
   name: "FrequencView",
+  props: {
+    selected: {
+      type: Object,
+      required: true,
+    },
+  },
   data() {
     return {
       form: {
@@ -29,14 +35,19 @@ export default {
       },
     };
   },
+  watch: {
+    form: {
+      handler(newVal) {
+        // console.log("area changed", newVal, oldVal);
+        this.$emit("frequence-changed", newVal);
+        // 可以在这里添加一些逻辑
+      },
+    },
+  },
   methods: {
     clearForm() {
       this.form.minDistance = "";
       this.form.pathCount = 1;
-    },
-    confirmForm() {
-      console.log("确认参数:", this.form);
-      // 这里可以添加具体的业务逻辑
     },
   },
 };

@@ -1,5 +1,6 @@
 import Vue from "vue";
 import Vuex from "vuex";
+import { Notification } from "element-ui";
 // import TMap from "https://map.qq.com/api/gljs?v=1.exp&key=OB4BZ-D4W3U-B7VVO-4PJWW-6TKDJ-WPB77&libraries=visualization";
 // import axios from "axios";
 
@@ -73,6 +74,50 @@ export default new Vuex.Store({
       } finally {
         commit("SET_TRAILS", { loading: false });
       }
+    },
+    async fetchAreaTrails({ commit }, { dateRange, area }) {
+      commit("SET_TRAILS", { loading: true });
+      try {
+        const response = await fetch("/api/query_region", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            startTime:
+              dateRange[0].toISOString().split("T")[0] +
+              " " +
+              dateRange[0].toTimeString().split(" ")[0],
+            endTime:
+              dateRange[1].toISOString().split("T")[0] +
+              " " +
+              dateRange[1].toTimeString().split(" ")[0],
+            ltPoint: [area.nw.point.lng, area.nw.point.lat],
+            rbPoint: [area.se.point.lng, area.se.point.lat],
+          }),
+        });
+        var data = await response.json();
+        console.log(data);
+        if (data.total === 0) {
+          Notification({
+            title: "错误",
+            message: "查询区域范围内无轨迹",
+            type: "error",
+          });
+          return;
+        } else {
+          commit("SET_TRAILS_DATA", data.path);
+          Notification({
+            title: "成功",
+            message: `成功查询区域范围内${data.total}条轨迹`,
+            type: "success",
+          });
+        }
+      } catch (error) {
+        console.error("请求 /query_region 时出错:", error);
+      }
+      commit("SET_TRAILS", { loading: false });
     },
   },
   modules: {},

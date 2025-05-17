@@ -84,17 +84,16 @@ def query_region():
         lng_gcj, lat_gcj = transform_wgs84_to_gcj02_point(lat, lng)
         if taxi_id not in result:
             result[taxi_id] = []
-        result[taxi_id].append({
-            "time": time,
-            "lng": lng_gcj,
-            "lat": lat_gcj
-        })
+        result[taxi_id].append([lat_gcj, lng_gcj, datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S").timestamp()])
 
     conn.close()
 
     return jsonify({
         "total": len(result),
-        "path": [{"id": taxi_id, "trail": trail} for taxi_id, trail in result.items()]
+        "path": [{
+            "vender":int(taxi_id),
+            "path":trail
+        } for taxi_id, trail in result.items()]
     })
 
 if __name__ == "__main__":

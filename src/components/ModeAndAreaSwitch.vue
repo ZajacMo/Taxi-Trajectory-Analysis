@@ -9,7 +9,7 @@
         style="margin-bottom: 10px"
       >
         <el-option
-          v-for="item in selectList"
+          v-for="item in options.selectOptions"
           :key="item"
           :label="item"
           :value="item"
@@ -43,13 +43,14 @@ export default {
   },
   data() {
     return {
-      radioList: ["单区域", "两区域"],
-      selectList: [
-        "区域范围查找",
-        "区域关联分析",
-        "频繁路径分析",
-        "通时行间分析",
-      ],
+      options: {
+        selectOptions: [
+          "区域范围查找",
+          "区域关联分析",
+          "频繁路径分析",
+          "通时行间分析",
+        ],
+      },
       selected: { radio: "单区域", mode: "区域范围查找" },
     };
   },
