@@ -24,7 +24,7 @@
           v-if="
             (selected.radio === '两区域' &&
               ['区域关联分析', '频繁路径分析'].includes(selected.mode)) ||
-            selected.mode === '通时行间分析'
+            selected.mode === '通行时间分析'
           "
         >
           区域1
@@ -47,7 +47,7 @@
       v-show="
         (selected.radio === '两区域' &&
           ['区域关联分析', '频繁路径分析'].includes(selected.mode)) ||
-        selected.mode === '通时行间分析'
+        selected.mode === '通行时间分析'
       "
     >
       <el-divider><h3>区域2</h3></el-divider>
@@ -75,6 +75,15 @@
       align="right"
     />
 
+    <time-selecter
+      v-if="selected.mode === '通行时间分析'"
+      @time-changed="
+        (selectedHours) => {
+          this.form.startTime = selectedHours;
+        }
+      "
+    />
+
     <div style="padding-top: 20px">
       <el-button type="danger" @click="clearAll">清空</el-button>
 
@@ -82,6 +91,21 @@
         >确认</el-button
       >
     </div>
+
+    <el-card shadow="hover" style="width: 100%; margin-top: 20px">
+      <el-statistic
+        v-if="selected.mode === '区域范围查找'"
+        title="范围内出租车数目"
+      >
+        <template slot="formatter"> {{ statistics.taxiCount }} </template>
+      </el-statistic>
+      <el-statistic
+        v-else-if="selected.mode === '通行时间分析'"
+        title="通行时间"
+      >
+        <template slot="formatter"> {{ statistics.trafficTime }} </template>
+      </el-statistic>
+    </el-card>
   </div>
 </template>
 <script>
@@ -89,12 +113,14 @@ import { mapState } from "vuex";
 import SelectRectangle from "@/components/SelectRectangle.vue";
 import FrequenceView from "@/components/FrequenceView.vue";
 import ModeAndAreaSwitch from "@/components/ModeAndAreaSwitch.vue";
+import TimeSelecter from "@/components/TimeSelecter.vue";
 export default {
   name: "AnalysisView",
   components: {
     SelectRectangle,
     FrequenceView,
     ModeAndAreaSwitch,
+    TimeSelecter,
   },
   computed: {
     ...mapState(["map"]),
@@ -104,8 +130,6 @@ export default {
   },
   data() {
     return {
-      // radio: "单区域",
-      // selectedMode: "区域范围查找",
       selected: {
         radio: "单区域",
         mode: "区域范围查找",
@@ -118,6 +142,11 @@ export default {
         },
         area1: null,
         area2: null,
+        startTime: null,
+      },
+      statistics: {
+        taxiCount: "请选择",
+        trafficTime: "00小时00分钟",
       },
       options: {
         pickerOptions: {
@@ -142,7 +171,13 @@ export default {
       },
     };
   },
-
+  watch: {
+    selected(newVal) {
+      this.$store.commit("SET_MAP", { mode: newVal.mode });
+      // console.log("selected", newVal);
+    },
+    deep: true,
+  },
   methods: {
     clearAll() {
       // 清空所有区域
@@ -184,6 +219,7 @@ export default {
         this.$store.dispatch("fetchTimeSpaceAnalysis", {
           area1: this.form.area1,
           area2: this.form.area2,
+          hour: this.form.startTime,
         });
       }
     },

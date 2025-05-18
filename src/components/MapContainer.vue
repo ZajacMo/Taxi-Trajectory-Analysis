@@ -44,16 +44,27 @@ export default {
           center: new TMap.LatLng(this.initCenter.lng, this.initCenter.lat),
           zoom: this.zoomLevel,
           mapStyleId: "style4",
+          pitchable: true,
           baseMap:{
             type: "vector",
             features:["base","building3d"],
-          }
+          },
+          renderOptions:{
+            skyOptions:{
+              color: "#000000", //天空颜色
+              intensity: 0.5, //天空亮度
+            },
+            fogOptions:{
+              color: "#000000", //天空颜色
+              intensity: 0.5, //天空亮度
+            }
+          },
         })
       });
       // 获取缩放控件实例并设置到右下角
       this.map.map
         .getControl(TMap.constants.DEFAULT_CONTROL_ID.ZOOM)
-        .setPosition(TMap.constants.CONTROL_POSITION.BOTTOM_RIGHT)
+        .setPosition(TMap.constants.CONTROL_POSITION.BOTTOM_RIGHT);
       // 获取3D罗盘控件实例并设置到右下角
       this.map.map
         .getControl(TMap.constants.DEFAULT_CONTROL_ID.ROTATION)

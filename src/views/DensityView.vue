@@ -1,68 +1,41 @@
 <template>
-  <div class="density-view">
+  <div class="density-view"
+    v-loading="this.loading"
+    element-loading-text="拼命计算中，请耐心等待">
+    <h3>车流密度分析</h3>
     <el-input v-model="form.r" placeholder="请输入距离参数r">
       <template slot="append">千米</template>
     </el-input>
-
-    <el-time-select
-      placeholder="起始时间"
-      v-model="form.startTime"
-      :editable="false"
-      :picker-options="{
-        start: '00:00',
-        step: '01:00',
-        end: '23:00',
-      }"
-    >
-    </el-time-select>
-    <el-time-select
-      placeholder="结束时间（只读）"
-      v-model="form.endTime"
-      readonly
-    >
-    </el-time-select>
+    <TimeSelecter @time-changed="(selectedHours) => { this.form.startTime = selectedHours }" />
     <div>
       <el-button @click="clearForm">清空</el-button>
       <el-button type="primary" @click="confirmForm">确认</el-button>
     </div>
     <el-card shadow="hover" style="width: 100%; margin-top: 20px">
       <div style="width: 100%; display: inline-block">
-        <el-statistic :value="heatValue" title="聚合热力值"> </el-statistic>
+        <el-statistic title="聚合热力值">
+          <template slot="formatter">{{ heatValue }}</template>
+        </el-statistic>
       </div>
     </el-card>
   </div>
 </template>
 
 <script>
+import TimeSelecter from '@/components/TimeSelecter.vue';
 export default {
   name: "DensityView",
+  components: {
+    TimeSelecter,
+  },
   data() {
     return {
       form: {
         r: "",
         startTime: "",
-        endTime: "",
       },
-      heatValue: 0,
+      heatValue: "请选择",
     };
-  },
-  watch: {
-    form: {
-      handler(newVal) {
-        this.$emit("form-changed", newVal);
-        if (newVal.startTime) {
-          const [hours, minutes] = newVal.startTime.split(":");
-          let newHours = parseInt(hours, 10) + 1;
-          if (newHours >= 24) {
-            newHours = 0;
-          }
-          this.form.endTime = `${newHours
-            .toString()
-            .padStart(2, "0")}:${minutes}`;
-        }
-      },
-      deep: true, // 深度监听
-    },
   },
   computed: {
     map() {
@@ -70,6 +43,9 @@ export default {
     },
     heat() {
       return this.$store.state.map.heat;
+    },
+    loading() {
+      return this.$store.state.trails.loading;
     },
   },
   methods: {
@@ -100,7 +76,7 @@ export default {
       });
       this.$store.dispatch("fetchDensityData", {
         r: this.form.r, 
-        startTime: parseInt(this.form.startTime.slice(0, 2), 10)
+        startTime: this.form.startTime
       });
       // 绑定事件
       this.heat.on("click", (evt) => {
@@ -124,6 +100,9 @@ export default {
 }
 .density-view {
   padding: 40px;
+}
+div{
+  margin-bottom: 20px;
 }
 /* .el-date-editor.el-range-editor {
   width: 100px;

@@ -1,7 +1,7 @@
 from flask import Flask
 from F1 import get_trail_lists,get_trails_post
 from F3 import query_region
-from F4 import get_heatmap_data
+from F4 import get_optimized_heatmap
 from F56 import analyze_flow
 from F7 import frequent_paths
 from F8 import frequent_paths_ab
@@ -26,8 +26,8 @@ def new_query_region():
 
 # F4
 @app.route('/heatmap', methods=['GET'])
-def new_get_heatmap_data():
-    return get_heatmap_data()
+def new_get_optimized_heatmap():
+    return get_optimized_heatmap()
 
 # F56
 @app.route('/flow_analysis', methods=['GET'])

@@ -16,6 +16,10 @@ export default new Vuex.Store({
       markerLayer: null, // 用于存储标记点实例的状态
       rectangleID: null, // 用于存储矩形实例的状态
     },
+    statistics: {
+      taxiCount: "请选择", // 用于存储出租车数量的状态
+      trfficTime: "00小时00分钟",
+    },
     markedPoint: [], // 用于存储标记点的状态
     // 轨迹数据的状态
     trails: {
@@ -29,6 +33,11 @@ export default new Vuex.Store({
     SET_MAP(state, item) {
       for (let key in item) {
         state.map[key] = item[key];
+      }
+    },
+    SET_STATISTICS(state, item) {
+      for (let key in item) {
+        state.statistics[key] = item[key];
       }
     },
     SET_TRAILS(state, item) {
@@ -46,6 +55,7 @@ export default new Vuex.Store({
       state.map.heat.setData(value);
       // 数据聚合之后才能够真正获取值域范围
       state.map.heat.setShowRange(state.map.heat.getValueRange());
+      state.map.map.setPitch(50).setRotation(50);
       // state.trails.data = value;
     },
     RESET_MARKERLAYER(state) {
@@ -187,6 +197,7 @@ export default new Vuex.Store({
             duration: 10000,
           });
         }
+        commit("SET_STATISTICS", { taxiCount: data.total });
       } catch (error) {
         Notification({
           title: "错误",
@@ -301,12 +312,13 @@ export default new Vuex.Store({
         commit("SET_TRAILS", { loading: false });
       }
     },
-    async fetchTimeSpaceAnalysis({ commit }, { area1, area2 }) {
+    async fetchTimeSpaceAnalysis({ commit }, { area1, area2, hour }) {
       commit("SET_TRAILS", { loading: true });
       try {
         const params = {
           area1: `${area1.nw.point.lng},${area1.se.point.lng},${area1.se.point.lat},${area1.nw.point.lat}`,
           area2: `${area2.nw.point.lng},${area2.se.point.lng},${area2.se.point.lat},${area2.nw.point.lat}`,
+          hour: `${hour}`,
         };
         const queryString = Object.entries(params)
           .map(
@@ -334,6 +346,7 @@ export default new Vuex.Store({
         } else {
           throw new Error("请求失败");
         }
+        // commit("SET_STATISTICS", { trfficTime: data.dat });
       } catch (error) {
         // console.error("请求 /flow_analysi 时出错:", error);
         Notification({

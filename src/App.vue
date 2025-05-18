@@ -23,12 +23,26 @@ export default {
   //   },
   // },
   //检测路由地址从statistics离开而做出相应的操作
+  computed: {
+    map() {
+      return this.$store.state.map.map;
+    },
+  },
   watch: {
     $route(to, from) {
       if (from.path === "/analysis") {
         if (this.$store.state.map.map) {
           this.$store.commit("RESET_MARKERLAYER");
         }
+      } else if (from.path === "/density") {
+        if (this.$store.state.map.map) {
+          this.$store.commit("RESET_MARKERLAYER");
+          this.map.setPitch(0).setRotation(0);
+          this.$store.state.map.heat.destroy();
+        }
+      } else {
+        // if (this.$store.state.map.map) {
+        // }
       }
     },
   },

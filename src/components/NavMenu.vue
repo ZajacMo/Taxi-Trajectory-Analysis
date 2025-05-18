@@ -94,12 +94,14 @@ export default {
       this.$emit("menu-select", key);
     },
     handleSearch() {
+      var simplify = false;
       if (this.selectedOptions.length === 0) {
         this.selectedOptions = "all";
+        simplify = true;
       }
       this.$store.dispatch("fetchTrails", {
         taxi_ids: this.selectedOptions,
-        simplify: true,
+        simplify: simplify,
         // tolerance: 0.001,
       });
     },

@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify
+import random
 import os
+from flask import Flask, request, jsonify
 from typing import List, Optional
 from dataclasses import dataclass
 from datetime import datetime
@@ -194,6 +195,7 @@ def get_trails_post():
         "taxi_ids": ["1", "2"],         # 可选，若不传则查询所有
         "simplify": true,               # 可选，默认 false
         "tolerance": 0.0001             # 可选，轨迹简化容忍度
+        "sample_count": 10               # 可选，随机抽样数量
     }
     """
     try:
