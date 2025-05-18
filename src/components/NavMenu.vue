@@ -75,10 +75,6 @@ export default {
         { index: "/", label: "轨迹展示" },
         { index: "/density", label: "车流密度" },
         { index: "/analysis", label: "工具分析" },
-        // { index: "/statistics", label: "范围统计" },
-        // { index: "/frequency", label: "频繁路径分析" },
-        // { index: "/time", label: "通时行间分析" },
-        // { index: "/admin", label: "登录信息", icon: "el-icon-menu" },
       ],
     };
   },
@@ -98,10 +94,13 @@ export default {
       this.$emit("menu-select", key);
     },
     handleSearch() {
+      if (this.selectedOptions.length === 0) {
+        this.selectedOptions = "all";
+      }
       this.$store.dispatch("fetchTrails", {
         taxi_ids: this.selectedOptions,
-        simplify: false,
-        tolerance: 0.001,
+        simplify: true,
+        // tolerance: 0.001,
       });
     },
     // 定义防抖后的远程方法
@@ -113,10 +112,10 @@ export default {
         clearTimeout(timer);
       }
       // 如果查询字符串为空，不发送请求
-      if (!queryString) {
-        this.options = [];
-        return;
-      }
+      // if (!queryString) {
+      //   this.options = [];
+      //   return;
+      // }
       // 设置新的定时器
       timer = setTimeout(() => {
         // 发起get请求

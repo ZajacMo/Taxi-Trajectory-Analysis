@@ -203,7 +203,7 @@ def get_trails_post():
 
     taxi_ids = req.get("taxi_ids", "all")
     simplify = req.get("simplify", False)
-    tolerance = float(req.get("tolerance", 0.0001))
+    tolerance = float(req.get("tolerance", 0.001))
 
     # print("Received request:", req)
     print(os.getcwd())

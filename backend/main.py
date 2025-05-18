@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask
 from F1 import get_trail_lists,get_trails_post
 from F3 import query_region
 from F4 import get_heatmap_data
