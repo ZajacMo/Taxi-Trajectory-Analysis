@@ -1,93 +1,150 @@
 from flask import Flask, request, jsonify
 import os
 import math
-from collections import defaultdict
+import numpy as np
+from multiprocessing import Pool, cpu_count, shared_memory
 from coordTransform_utils import wgs84_to_gcj02
-from multiprocessing import Pool, cpu_count
+import time
 
 app = Flask(__name__)
 
-def process_file(params):
-    """处理单个文件的核心函数（修正参数接收方式）"""
-    filename, folder_path, r, target_hour = params  # 解包参数
-    file_counts = defaultdict(int)
+# 北京边界坐标（GCJ02）
+BEIJING_BOUNDS = {
+    'min_lng': 115.70,
+    'max_lng': 117.50, 
+    'min_lat': 39.40,
+    'max_lat': 41.60
+}
+
+def is_in_beijing(lng, lat):
+    """检查坐标是否在北京范围内"""
+    return (BEIJING_BOUNDS['min_lng'] <= lng <= BEIJING_BOUNDS['max_lng'] and
+            BEIJING_BOUNDS['min_lat'] <= lat <= BEIJING_BOUNDS['max_lat'])
+
+def create_shared_heatmap(grid_size=0.01):
+    """创建共享内存的热力图网格（修正维度问题）"""
+    # 计算网格数量
+    lng_size = int((BEIJING_BOUNDS['max_lng'] - BEIJING_BOUNDS['min_lng']) / grid_size) + 1
+    lat_size = int((BEIJING_BOUNDS['max_lat'] - BEIJING_BOUNDS['min_lat']) / grid_size) + 1
     
-    with open(os.path.join(folder_path, filename), 'r') as file:
-        for line in file:
-            parts = line.strip().split(',')
-            if len(parts) < 4:
-                continue
-            
-            try:
-                _, time_str, lng_str, lat_str = parts[:4]
-                hour = int(time_str.split(' ')[1].split(':')[0])
-                
-                # 时间过滤
-                if target_hour is not None and hour != target_hour:
+    # 创建共享内存
+    shm = shared_memory.SharedMemory(
+        create=True,
+        size=24*lng_size*lat_size*4  # 24小时×经度×纬度×4字节
+    )
+    # 正确的三维数组reshape
+    heatmap = np.ndarray((24, lng_size, lat_size), dtype=np.int32, buffer=shm.buf)
+    heatmap.fill(0)
+    return shm, (lng_size, lat_size)  # 返回网格尺寸信息
+
+def process_file_optimized(args):
+    """修正后的文件处理函数"""
+    filename, folder_path, grid_size, shm_name, grid_dims = args
+    try:
+        existing_shm = shared_memory.SharedMemory(name=shm_name)
+        lng_size, lat_size = grid_dims
+        # 正确reshape共享内存
+        heatmap = np.ndarray((24, lng_size, lat_size), dtype=np.int32, buffer=existing_shm.buf)
+        
+        with open(os.path.join(folder_path, filename), 'r', encoding='utf-8') as file:
+            for line in file:
+                parts = line.split(',', 3)
+                if len(parts) < 4:
                     continue
                 
-                # 坐标转换和网格化
-                lng, lat = wgs84_to_gcj02(float(lng_str), float(lat_str))
-                grid_x, grid_y = math.floor(lng / r), math.floor(lat / r)
-                center_lng, center_lat = (grid_x + 0.5) * r, (grid_y + 0.5) * r
-                
-                file_counts[(center_lng, center_lat)] += 1
-            except (ValueError, IndexError):
-                continue
-                
-    return file_counts
+                try:
+                    _, time_str, lng_str, lat_str = parts
+                    lng, lat = wgs84_to_gcj02(float(lng_str), float(lat_str))
+                    
+                    # 过滤非北京坐标
+                    if not is_in_beijing(lng, lat):
+                        continue
+                    
+                    hour = int(time_str[11:13])  # 直接提取小时部分
+                    grid_x = int((lng - BEIJING_BOUNDS['min_lng']) / grid_size)
+                    grid_y = int((lat - BEIJING_BOUNDS['min_lat']) / grid_size)
+                    
+                    # 边界检查
+                    if 0 <= grid_x < lng_size and 0 <= grid_y < lat_size:
+                        heatmap[hour, grid_x, grid_y] += 1
+                except (ValueError, IndexError):
+                    continue
+    finally:
+        existing_shm.close()
 
-def process_taxi_data(folder_path, r, target_hour=None):
-    """优化后的主处理函数"""
-    files = [f for f in os.listdir(folder_path) if f.endswith('.txt')]
-    if not files:
-        return []
-    
-    # 准备参数列表（每个元素是包含所有参数的元组）
-    params_list = [(f, folder_path, r, target_hour) for f in files]
-    
-    # 并行处理（使用map而不是starmap）
-    with Pool(processes=min(cpu_count(), 4)) as pool:  # 限制最大进程数
-        results = pool.map(process_file, params_list)
-    
-    # 合并结果
-    total_counts = defaultdict(int)
-    for file_result in results:
-        for point, count in file_result.items():
-            total_counts[point] += count
-    
-    return [{
-        "lng": lng,
-        "lat": lat,
-        "count": count
-    } for (lng, lat), count in total_counts.items()]
-
-@app.route('/heatmap', methods=['GET'])
-def get_heatmap_data():
-    # 参数获取
-    folder_path = request.args.get('folder_path', 'taxi_log_2008_by_id')
-    grid_width = float(request.args.get('grid_width', 0.01))
-    
-    # 时间参数（0~23的整数）
-    hour_param = request.args.get('hour')
-    target_hour = None
-    if hour_param and hour_param.isdigit():
-        hour = int(hour_param)
-        if 0 <= hour <= 23:
-            target_hour = hour
+@app.route('/api/heatmap', methods=['GET'])
+def get_optimized_heatmap():
+    """修正后的热力图端点"""
+    start_time = time.time()
     
     try:
-        result = process_taxi_data(folder_path, grid_width, target_hour)
-        return jsonify({
-            "status": "success",
-            "data": result,
-            "params": {
-                "grid_width": grid_width,
-                "hour": target_hour if target_hour is not None else "全部时段"
-            }
-        })
+        # 参数解析
+        grid_size = float(request.args.get('grid_width', 0.01))
+        target_hour = int(request.args['hour']) if 'hour' in request.args else None
+        folder_path = request.args.get('folder_path', 'taxi_log_2008_by_id')
+        
+        # 创建共享热力图（获取网格尺寸）
+        shm, grid_dims = create_shared_heatmap(grid_size)
+        lng_size, lat_size = grid_dims
+        
+        try:
+            # 并行处理
+            files = [f for f in os.listdir(folder_path) if f.endswith('.txt')]
+            with Pool(min(cpu_count(), 4)) as pool:
+                pool.map(process_file_optimized,
+                        [(f, folder_path, grid_size, shm.name, grid_dims) for f in files],
+                        chunksize=5)
+            
+            # 生成响应数据
+            heatmap = np.ndarray((24, lng_size, lat_size), dtype=np.int32, buffer=shm.buf)
+            result = []
+            lng_step = grid_size
+            lat_step = grid_size
+            
+            if target_hour is not None:
+                # 单小时模式
+                hour_data = heatmap[target_hour]
+                for x in range(lng_size):
+                    for y in range(lat_size):
+                        count = int(hour_data[x, y])
+                        if count > 0:
+                            result.append({
+                                "lng": round(BEIJING_BOUNDS['min_lng'] + x * lng_step + lng_step/2, 6),
+                                "lat": round(BEIJING_BOUNDS['min_lat'] + y * lat_step + lat_step/2, 6),
+                                "count": count
+                            })
+            else:
+                # 全时段模式
+                for hour in range(24):
+                    hour_data = heatmap[hour]
+                    for x in range(lng_size):
+                        for y in range(lat_size):
+                            count = int(hour_data[x, y])
+                            if count > 0:
+                                result.append({
+                                    "lng": round(BEIJING_BOUNDS['min_lng'] + x * lng_step + lng_step/2, 6),
+                                    "lat": round(BEIJING_BOUNDS['min_lat'] + y * lat_step + lat_step/2, 6),
+                                    "count": count,
+                                    "hour": hour
+                                })
+            
+            return jsonify({
+                "status": "success",
+                "data": result,
+                "process_time": round(time.time() - start_time, 2),
+                "grid_size": grid_size
+            })
+        
+        finally:
+            shm.close()
+            shm.unlink()
+    
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "process_time": round(time.time() - start_time, 2)
+        }), 400
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000)
