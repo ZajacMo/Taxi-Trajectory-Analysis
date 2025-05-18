@@ -205,7 +205,7 @@ def get_trails_post():
     taxi_ids = req.get("taxi_ids", "all")
     sample_count = req.get("sampleCount", None)
     simplify = req.get("simplify", False)
-    tolerance = float(req.get("tolerance", 0.0001)
+    tolerance = float(req.get("tolerance", 0.0001))
                       
     if taxi_ids == "all":
         try:

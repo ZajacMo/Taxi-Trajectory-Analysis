@@ -18,7 +18,7 @@ export default new Vuex.Store({
     },
     statistics: {
       taxiCount: "请选择", // 用于存储出租车数量的状态
-      trfficTime: "00小时00分钟",
+      trafficTime: "00小时00分钟",
     },
     markedPoint: [], // 用于存储标记点的状态
     // 轨迹数据的状态
@@ -255,6 +255,7 @@ export default new Vuex.Store({
         commit("SET_TRAILS", { loading: false });
       }
     },
+
     async fetchFrequencePath({ commit }, { frequence }) {
       commit("SET_TRAILS", { loading: true });
       try {
@@ -277,6 +278,7 @@ export default new Vuex.Store({
         commit("SET_TRAILS", { loading: false });
       }
     },
+
     async fetchFrequencePath2({ commit }, { frequence, area1, area2 }) {
       commit("SET_TRAILS", { loading: true });
       try {
@@ -304,7 +306,7 @@ export default new Vuex.Store({
         // console.error("请求 /flow_analysi 时出错:", error);
         Notification({
           title: "错误",
-          message: "区域关联分析失败",
+          message: "频繁路径分析失败",
           type: "error",
           duration: 5000,
         });
@@ -312,6 +314,7 @@ export default new Vuex.Store({
         commit("SET_TRAILS", { loading: false });
       }
     },
+
     async fetchTimeSpaceAnalysis({ commit }, { area1, area2, hour }) {
       commit("SET_TRAILS", { loading: true });
       try {
@@ -346,7 +349,12 @@ export default new Vuex.Store({
         } else {
           throw new Error("请求失败");
         }
-        // commit("SET_STATISTICS", { trfficTime: data.dat });
+        const totalMinutes = data.data[0].travel_time;
+
+        commit("SET_STATISTICS", {
+          trafficTime: `${Math.floor(totalMinutes / 60)}小时
+          ${Math.floor(totalMinutes % 60)}分钟`,
+        });
       } catch (error) {
         // console.error("请求 /flow_analysi 时出错:", error);
         Notification({

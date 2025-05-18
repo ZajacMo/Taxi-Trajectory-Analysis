@@ -85,8 +85,6 @@ export default {
           this.heatValue = aggregator.count;
         }
       });
-      // 这里可以添加具体的业务逻辑
-      // this.$emit(");
     },
   },
 };

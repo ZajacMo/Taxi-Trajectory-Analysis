@@ -103,7 +103,9 @@
         v-else-if="selected.mode === '通行时间分析'"
         title="通行时间"
       >
-        <template slot="formatter"> {{ statistics.trafficTime }} </template>
+        <template slot="formatter">
+          {{ statistics.trafficTime }}
+        </template>
       </el-statistic>
     </el-card>
   </div>
@@ -123,7 +125,7 @@ export default {
     TimeSelecter,
   },
   computed: {
-    ...mapState(["map"]),
+    ...mapState(["map", "statistics"]),
     loading() {
       return this.$store.state.trails.loading;
     },
@@ -144,10 +146,10 @@ export default {
         area2: null,
         startTime: null,
       },
-      statistics: {
-        taxiCount: "请选择",
-        trafficTime: "00小时00分钟",
-      },
+      // statistics: {
+      //   taxiCount: "请选择",
+      //   trafficTime: "00小时00分钟",
+      // },
       options: {
         pickerOptions: {
           shortcuts: [
