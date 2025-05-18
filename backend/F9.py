@@ -1,114 +1,121 @@
 from flask import Flask, request, jsonify
 import os
-import math
-import numpy as np
+from datetime import datetime
 from multiprocessing import Pool, cpu_count, Manager
 from coordTransform_utils import wgs84_to_gcj02
-from datetime import datetime
 import time
-import heapq
 
 app = Flask(__name__)
 
-# 使用slots减少内存占用
-class TrajectoryNode:
-    __slots__ = ['hour', 'lng', 'lat', 'timestamp']
-    def __init__(self, hour, lng, lat, timestamp):
+class TrajectoryAnalyzer:
+    __slots__ = ['hour', 'entry_time', 'exit_time', 'path']
+    
+    def __init__(self, hour=None):
         self.hour = hour
-        self.lng = lng
-        self.lat = lat
-        self.timestamp = timestamp
+        self.entry_time = None
+        self.exit_time = None
+        self.path = []
 
-def calculate_distance(p1, p2):
-    """快速距离计算（使用平方避免开方）"""
-    return (p2[0] - p1[0])**2 + (p2[1] - p1[1])**2
+def parse_timestamp(time_str):
+    """安全解析时间戳"""
+    try:
+        return datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return None
 
 def process_trajectory(args):
-    """优化后的轨迹处理函数"""
-    filename, area1, area2, result_dict = args
-    hourly_stats = {}
+    """健壮的轨迹处理函数"""
+    filename, area1, area2, target_hour, result_dict = args
+    local_stats = {}
     
-    with open(filename, 'r') as f:
-        current_taxi = None
-        trajectory = []
-        
-        for line in f:
-            # 使用快速分割方法
-            parts = line.split(',', 3)
-            if len(parts) < 4:
-                continue
+    try:
+        with open(filename, 'r') as f:
+            current_taxi = None
+            analyzer = None
             
-            try:
-                taxi_id = parts[0]
-                time_str = parts[1]
-                lng, lat = wgs84_to_gcj02(float(parts[2]), float(parts[3]))
-                hour = int(time_str[11:13])  # 直接提取小时部分
+            for line in f:
+                parts = line.strip().split(',', 3)
+                if len(parts) < 4:
+                    continue
                 
-                if taxi_id != current_taxi:
-                    if trajectory:
-                        process_single_trajectory(trajectory, area1, area2, hourly_stats)
-                    current_taxi = taxi_id
-                    trajectory = []
+                try:
+                    taxi_id = parts[0]
+                    time_str = parts[1]
+                    lng, lat = wgs84_to_gcj02(float(parts[2]), float(parts[3]))
+                    hour = int(time_str[11:13])
+                    
+                    # 时间过滤
+                    if target_hour is not None and hour != target_hour:
+                        continue
+                    
+                    if taxi_id != current_taxi:
+                        if analyzer is not None:  # 明确检查None
+                            update_stats(analyzer, local_stats)
+                        current_taxi = taxi_id
+                        analyzer = TrajectoryAnalyzer(hour)
+                    
+                    # 确保analyzer已初始化
+                    if analyzer is None:
+                        continue
+                    
+                    # 区域判断
+                    in_area1 = (area1[0] <= lng <= area1[1]) and (area1[2] <= lat <= area1[3])
+                    in_area2 = (area2[0] <= lng <= area2[1]) and (area2[2] <= lat <= area2[3])
+                    
+                    if not analyzer.path and in_area1:
+                        analyzer.entry_time = parse_timestamp(time_str)
+                        if analyzer.entry_time:  # 时间解析成功
+                            analyzer.path.append((lng, lat))
+                    elif analyzer.path:
+                        analyzer.path.append((lng, lat))
+                        if in_area2:
+                            analyzer.exit_time = parse_timestamp(time_str)
+                            if analyzer.exit_time:  # 时间解析成功
+                                update_stats(analyzer, local_stats)
+                            analyzer = None
                 
-                trajectory.append(TrajectoryNode(hour, lng, lat, time_str))
-            except (ValueError, IndexError):
-                continue
-        
-        if trajectory:
-            process_single_trajectory(trajectory, area1, area2, hourly_stats)
+                except (ValueError, IndexError):
+                    continue
+            
+            # 最终检查未处理的轨迹
+            if analyzer is not None and analyzer.path:
+                update_stats(analyzer, local_stats)
     
-    # 合并结果到共享字典
-    for hour, stats in hourly_stats.items():
+    except Exception as e:
+        print(f"处理文件 {filename} 时出错: {str(e)}")
+    
+    # 合并结果
+    for hour, stats in local_stats.items():
         if hour not in result_dict or stats['time'] < result_dict[hour]['time']:
             result_dict[hour] = stats
 
-def process_single_trajectory(trajectory, area1, area2, hourly_stats):
-    """处理单条轨迹的核心逻辑"""
-    in_area1 = False
-    path_segment = []
-    a1_min_lng, a1_max_lng, a1_min_lat, a1_max_lat = area1
-    a2_min_lng, a2_max_lng, a2_min_lat, a2_max_lat = area2
-    
-    for i, point in enumerate(trajectory):
-        # 使用短路计算加速区域判断
-        if not in_area1:
-            if (a1_min_lng <= point.lng <= a1_max_lng and 
-                a1_min_lat <= point.lat <= a1_max_lat):
-                in_area1 = True
-                path_segment = [(point.lng, point.lat)]
-            continue
+def update_stats(analyzer, stats_dict):
+    """安全更新统计结果"""
+    if (analyzer is not None and analyzer.path and 
+        analyzer.entry_time and analyzer.exit_time):
+        travel_time = (analyzer.exit_time - analyzer.entry_time).total_seconds() / 60
+        hour = analyzer.hour
         
-        path_segment.append((point.lng, point.lat))
-        
-        # 检查是否到达区域B
-        if (a2_min_lng <= point.lng <= a2_max_lng and 
-            a2_min_lat <= point.lat <= a2_max_lat):
-            travel_time = len(path_segment)
-            hour = point.hour
-            
-            # 更新当前处理线程的最短路径
-            if hour not in hourly_stats or travel_time < hourly_stats[hour]['time']:
-                hourly_stats[hour] = {
-                    'path': path_segment.copy(),
-                    'time': travel_time,
-                    'count': 1
-                }
-            elif travel_time == hourly_stats[hour]['time']:
-                hourly_stats[hour]['count'] += 1
-            
-            break
+        if hour not in stats_dict or travel_time < stats_dict[hour]['time']:
+            stats_dict[hour] = {
+                'path': analyzer.path.copy(),
+                'time': round(travel_time, 2),  # 保留2位小数
+                'count': 1
+            }
+        elif travel_time == stats_dict[hour]['time']:
+            stats_dict[hour]['count'] += 1
 
-@app.route('/optimized_path', methods=['GET'])
+@app.route('/api/shortest_path', methods=['GET'])
 def analyze_shortest_path():
-    """优化后的API端点"""
+    """健壮的API端点"""
     start_time = time.time()
     
     try:
-        # 参数解析和验证
+        # 参数验证
         area1 = tuple(map(float, request.args['area1'].split(',')))
         area2 = tuple(map(float, request.args['area2'].split(',')))
-        folder_path = request.args.get('folder_path', 'taxi_log_2008_by_id')
-        workers = min(int(request.args.get('workers', cpu_count())), cpu_count())
+        target_hour = int(request.args['hour']) if 'hour' in request.args else None
+        folder_path = request.args.get('folder_path', 'GO')
         
         # 坐标转换
         def convert_area(area):
@@ -123,57 +130,51 @@ def analyze_shortest_path():
         area1 = convert_area(area1)
         area2 = convert_area(area2)
         
-        # 使用Manager共享结果
+        # 并行处理
         with Manager() as manager:
             result_dict = manager.dict()
-            
-            # 准备任务
             files = [os.path.join(folder_path, f) 
                     for f in os.listdir(folder_path) 
                     if f.endswith('.txt')]
             
-            # 并行处理
+            workers = min(cpu_count(), 4)
             with Pool(workers) as pool:
-                pool.map(process_trajectory, 
-                        [(f, area1, area2, result_dict) for f in files],
-                        chunksize=10)
+                pool.map(process_trajectory,
+                        [(f, area1, area2, target_hour, result_dict) for f in files],
+                        chunksize=5)
             
             # 构建响应
             response_data = []
-            for hour in range(24):
-                if hour in result_dict:
-                    stats = result_dict[hour]
+            if target_hour is not None:
+                stats = result_dict.get(target_hour, {'path': None, 'time': -1, 'count': 0})
+                response_data.append({
+                    "hour": target_hour,
+                    "path": stats['path'],
+                    "travel_time": stats['time'],
+                    "sample_count": stats['count']
+                })
+            else:
+                for hour in range(24):
+                    stats = result_dict.get(hour, {'path': None, 'time': -1, 'count': 0})
                     response_data.append({
                         "hour": hour,
                         "path": stats['path'],
                         "travel_time": stats['time'],
                         "sample_count": stats['count']
                     })
-                else:
-                    response_data.append({
-                        "hour": hour,
-                        "path": None,
-                        "travel_time": -1,
-                        "sample_count": 0
-                    })
             
             return jsonify({
                 "status": "success",
-                "processing_time": round(time.time() - start_time, 2),
                 "data": response_data,
-                # "params": {
-                #     "area1": area1,
-                #     "area2": area2,
-                #     "workers_used": workers
-                # }
+                "process_time": round(time.time() - start_time, 2)
             })
     
     except Exception as e:
         return jsonify({
             "status": "error",
             "message": str(e),
-            "processing_time": round(time.time() - start_time, 2)
+            "process_time": round(time.time() - start_time, 2)
         }), 400
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, threaded=False, processes=1)
+    app.run(host='0.0.0.0', port=5000)
