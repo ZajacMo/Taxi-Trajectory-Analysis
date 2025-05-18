@@ -202,8 +202,9 @@ def get_trails_post():
         return jsonify({"error": "Invalid JSON body"}), 400
 
     taxi_ids = req.get("taxi_ids", "all")
+    sample_count = req.get("sampleCount", None)
     simplify = req.get("simplify", False)
-    tolerance = float(req.get("tolerance", 0.001))
+    tolerance = float(req.get("tolerance", 0.0001))
 
     # print("Received request:", req)
     print(os.getcwd())
@@ -211,7 +212,13 @@ def get_trails_post():
         return jsonify({"error": "No taxi IDs provided"}), 400
     if taxi_ids == "all":
         try:
-            taxi_ids = [f.split('.')[0] for f in os.listdir(DATA_DIR) if f.endswith('.txt')]
+            all_ids = [f.split('.')[0] for f in os.listdir(DATA_DIR) if f.endswith('.txt')]
+            if sample_count:
+                sample_count = int(sample_count)
+                random.shuffle(all_ids)
+                taxi_ids = all_ids[:sample_count]
+            else:
+                taxi_ids = all_ids
         except FileNotFoundError:
             return jsonify({"error": "Data directory not found"}), 500
 
@@ -222,30 +229,19 @@ def get_trails_post():
             trail = clean_trail(trail, simplify, tolerance)
             transformed_points = []
             for pt in trail.points:
-                new_lng, new_lat = wgs84_to_gcj02(lng=pt.longitude,lat=pt.latitude)
-                transformed_points.append(TrailPoint(new_lat, new_lng, pt.timestamp))
-            trail = TrailLine(taxi_id=trail.taxi_id, points=transformed_points)
+                lng_gcj, lat_gcj = wgs84_to_gcj02(pt.longitude, pt.latitude)
+                transformed_points.append([lat_gcj, lng_gcj, datetime.strptime(pt.timestamp, "%Y-%m-%d %H:%M:%S").timestamp()])
             return {
                 "vendor": int(trail.taxi_id),
-                "path": [[
-                        pt.latitude,
-                        pt.longitude,
-                        datetime.strptime(pt.timestamp, "%Y-%m-%d %H:%M:%S").timestamp()
-                    ] for pt in trail.points
-                ]
+                "path": transformed_points
             }
         return None
 
-    # 创建一个最大线程数为20的线程池
-    with ThreadPoolExecutor(max_workers=20) as executor:
+    with ThreadPoolExecutor(max_workers=16) as executor:
         results = list(executor.map(process_taxi_id, taxi_ids))
-        if len(results) % 50==0:
-            socketio.emit('task_progress', {
-                'status': 'processing',
-                'progress': len(results) / len(taxi_ids) * 100
-            }, namespace='/trails/progress')
 
-    return jsonify(results)
+    result = [r for r in results if r]
+    return jsonify(result)
 
 
 if __name__ == "__main__":
