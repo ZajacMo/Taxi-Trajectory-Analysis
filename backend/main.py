@@ -6,7 +6,6 @@ from F56 import analyze_flow
 from F7 import frequent_paths
 from F8 import frequent_paths_ab
 from F9 import analyze_shortest_path
-from F56 import analyze_flow
 
 app = Flask(__name__)
 

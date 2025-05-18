@@ -3,6 +3,7 @@ node_modules
 /dist
 /backend/GO
 /backend/taxi_log_2008_by_id
+/backend/__pycache__
 
 # local env files
 .env.local
