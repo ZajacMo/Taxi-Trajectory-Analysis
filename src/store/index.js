@@ -12,6 +12,7 @@ export default new Vuex.Store({
       map: null, // 用于存储地图实例的状态
       mode: null,
       trail: null, // 用于存储轨迹实例的状态
+      heat: null, // 用于存储热力图实例的状态
       markerLayer: null, // 用于存储标记点实例的状态
       rectangleID: null, // 用于存储矩形实例的状态
     },
@@ -41,6 +42,7 @@ export default new Vuex.Store({
     },
     SET_HEAT_DATA(state, value) {
       console.log("设置热力图数据", value);
+      // console.log("热力图实例", state.map.heat);
       state.map.heat.setData(value);
       // 数据聚合之后才能够真正获取值域范围
       state.map.heat.setShowRange(state.map.heat.getValueRange());
