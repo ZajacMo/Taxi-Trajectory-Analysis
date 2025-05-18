@@ -39,6 +39,13 @@ export default new Vuex.Store({
       state.map.trail.setData(value);
       state.trails.data = value;
     },
+    SET_HEAT_DATA(state, value) {
+      console.log("设置热力图数据", value);
+      state.map.heat.setData(value);
+      // 数据聚合之后才能够真正获取值域范围
+      state.map.heat.setShowRange(state.map.heat.getValueRange());
+      // state.trails.data = value;
+    },
     RESET_MARKERLAYER(state) {
       if (state.map.rectangleID) {
         state.map.markerLayer.remove(state.map.rectangleID);
@@ -48,6 +55,48 @@ export default new Vuex.Store({
     },
   },
   actions: {
+    async fetchDensityData({ commit }, { r, startTime }) {
+      commit("SET_TRAILS", { loading: true });
+      try {
+        const params = new URLSearchParams({
+          r: r / 111,
+          hour: startTime,
+        });
+        const response = await fetch(`/api/heatmap?${params.toString()}`, {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+          },
+        });
+        var data = await response.json();
+        if (data.length === 0) {
+          Notification({
+            title: "消息",
+            message: "暂无热力图数据",
+            type: "error",
+            duration: 5000,
+          });
+        } else {
+          commit("SET_HEAT_DATA", data.data);
+          // console.log(data);
+          Notification({
+            title: "成功",
+            message: `成功获取${data.data.length}条热力图数据`,
+            type: "success",
+            duration: 5000,
+          });
+        }
+      } catch (error) {
+        Notification({
+          title: "错误",
+          message: "获取热力图数据失败",
+          type: "error",
+          duration: 5000,
+        });
+      } finally {
+        commit("SET_TRAILS", { loading: false });
+      }
+    },
     async fetchTrails({ commit }, { taxi_ids, simplify, tolerance }) {
       commit("SET_TRAILS", { loading: true, options: taxi_ids });
       console.log("正在发送路线数据...");

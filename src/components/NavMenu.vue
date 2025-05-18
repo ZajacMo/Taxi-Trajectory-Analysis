@@ -72,9 +72,9 @@ export default {
       selectedOptions: [], // 选中的选项
       options: [], // 关键字匹配结果
       menuItems: [
-        { index: "/", label: "轨迹展示" },
-        { index: "/density", label: "车流密度" },
-        { index: "/analysis", label: "工具分析" },
+        { index: "/", label: "轨迹展示", icon: "el-icon-s-promotion" },
+        { index: "/density", label: "车流密度", icon: "el-icon-s-flag" },
+        { index: "/analysis", label: "工具分析", icon: "el-icon-s-data" },
       ],
     };
   },

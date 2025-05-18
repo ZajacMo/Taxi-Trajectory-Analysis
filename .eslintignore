@@ -1,4 +1,5 @@
-src/components/MapContainer.vue
 sre/store
 src/views/AreaSearchView.vue
+src/views/DensityView.vue
 src/components/SelectRectangle.vue
+src/components/MapContainer.vue
