@@ -66,7 +66,6 @@ def load_taxi_data(taxi_id: str) -> Optional[TrailLine]:
     """
     filepath = os.path.join(DATA_DIR, f"{taxi_id}.txt")
     if not os.path.exists(filepath):
-        print(f"File not found: {filepath}")
         return None
 
     points = []
@@ -204,12 +203,8 @@ def get_trails_post():
     taxi_ids = req.get("taxi_ids", "all")
     sample_count = req.get("sampleCount", None)
     simplify = req.get("simplify", False)
-    tolerance = float(req.get("tolerance", 0.0001))
-
-    # print("Received request:", req)
-    print(os.getcwd())
-    if not taxi_ids:
-        return jsonify({"error": "No taxi IDs provided"}), 400
+    tolerance = float(req.get("tolerance", 0.0001)
+                      
     if taxi_ids == "all":
         try:
             all_ids = [f.split('.')[0] for f in os.listdir(DATA_DIR) if f.endswith('.txt')]
