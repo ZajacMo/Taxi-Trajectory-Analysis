@@ -4,6 +4,9 @@
     v-loading="this.loading"
     element-loading-text="拼命计算中，请耐心等待"
   >
+    <el-dialog :visible.sync="echartVisible" width="50%" :modal="false">
+      <EChartsFunnelChart :mode="selected.radio" />
+    </el-dialog>
     <!-- 模式和区域切换 -->
     <ModeAndAreaSwitch @select-change="(newVal) => (selected = newVal)" />
 
@@ -116,6 +119,7 @@ import SelectRectangle from "@/components/SelectRectangle.vue";
 import FrequenceView from "@/components/FrequenceView.vue";
 import ModeAndAreaSwitch from "@/components/ModeAndAreaSwitch.vue";
 import TimeSelecter from "@/components/TimeSelecter.vue";
+import EChartsFunnelChart from "@/components/EChartsFunnelChart.vue";
 export default {
   name: "AnalysisView",
   components: {
@@ -123,15 +127,21 @@ export default {
     FrequenceView,
     ModeAndAreaSwitch,
     TimeSelecter,
+    EChartsFunnelChart,
   },
   computed: {
     ...mapState(["map", "statistics"]),
     loading() {
       return this.$store.state.trails.loading;
     },
+    // 添加计算属性监听 state.echartVisible
+    storeEchartVisible() {
+      return this.$store.state.echart.visible;
+    },
   },
   data() {
     return {
+      echartVisible: true,
       selected: {
         radio: "单区域",
         mode: "区域范围查找",
@@ -179,6 +189,10 @@ export default {
       // console.log("selected", newVal);
     },
     deep: true,
+    // 监听 state.echartVisible 变化
+    storeEchartisible() {
+      this.echartVisible = true;
+    },
   },
   methods: {
     clearAll() {

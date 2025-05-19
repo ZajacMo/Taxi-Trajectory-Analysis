@@ -4,10 +4,6 @@ import Vue from "vue";
 import Vuex from "vuex";
 // 导入 Element UI 的 Notification 组件
 import { Notification } from "element-ui";
-// 注释掉的 TMap 导入语句
-// import TMap from "https://map.qq.com/api/gljs?v=1.exp&key=OB4BZ-D4W3U-B7VVO-4PJWW-6TKDJ-WPB77&libraries=visualization";
-// 注释掉的 axios 导入语句
-// import axios from "axios";
 
 // 让 Vue 使用 Vuex
 Vue.use(Vuex);
@@ -46,6 +42,7 @@ export default new Vuex.Store({
       data: [],
     },
     refresh: false,
+    echart: { visible: false, data: null },
   },
   // 定义修改状态的突变函数
   mutations: {
@@ -103,6 +100,14 @@ export default new Vuex.Store({
       // state.trails.data = value;
     },
     /**
+     * 设置标记点
+     * @param {Object} state - 当前状态对象
+     * @param {Array} value - 要设置的标记点数组
+     */
+    SET_ECHARTS_DATA(state, value) {
+      state.echart.data = value;
+    },
+    /**
      * 重置标记层
      * 如果存在矩形实例，则移除并重置相关状态
      * @param {Object} state - 当前状态对象
@@ -113,6 +118,9 @@ export default new Vuex.Store({
         state.map.rectangleID = null;
         state.map.editor.setActionMode(state.map.mode.draw);
       }
+    },
+    SET_ECHARTS_VISIBLE(state) {
+      state.echart.visible = !state.echart.visible;
     },
   },
   // 定义异步操作的动作函数
@@ -302,6 +310,7 @@ export default new Vuex.Store({
           )
           .join("&");
         const url = `/api/flow_analysis?${queryString}`;
+        // console.log(url);
         const response = await fetch(url, {
           method: "GET",
           headers: {
@@ -310,7 +319,8 @@ export default new Vuex.Store({
           },
         });
         var data = await response.json();
-        console.log(data);
+        // console.log(data);
+        commit("SET_ECHARTS_DATA", data.data);
         if (data.status === "success") {
           // 显示查询区域关联关系成功的通知
           Notification({
@@ -319,6 +329,7 @@ export default new Vuex.Store({
             type: "success",
             duration: 5000,
           });
+          commit("SET_ECHARTS_VISIBLE");
         } else {
           throw new Error("查询区域关联关系失败");
         }
