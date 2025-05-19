@@ -1,3 +1,5 @@
+import datetime
+
 from flask import Flask, request, jsonify
 import sqlite3
 import math
@@ -103,6 +105,7 @@ def frequent_paths():
     for taxi_id, time, lng, lat in rows:
         lng_gcj, lat_gcj = transform_wgs84_to_gcj02_point(lng, lat)
         point = {"lat": lat_gcj, "lng": lng_gcj, "time": time}
+        # point = [lat_gcj, lng_gcj, datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S").timestamp()]
 
         if taxi_id != current_id:
             add_trail_if_valid(current_trail)
@@ -121,8 +124,12 @@ def frequent_paths():
     for path_key, count in top_paths:
         sample_trail = path_samples[path_key]
         result.append({
-            "count": count,
-            "trail": sample_trail
+            "vender": count,
+            "path": [[
+                p['lat'],
+                p['lng'],
+                datetime.datetime.strptime(p['time'],"%Y-%m-%d %H:%M:%S").timestamp()
+            ] for p in sample_trail]
         })
 
     return jsonify({

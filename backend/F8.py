@@ -3,6 +3,7 @@
 
 该模块提供基于Flask的Web服务，用于分析出租车在两个指定区域之间的频繁路径。
 """
+import datetime
 
 from flask import Flask, request, jsonify
 import sqlite3
@@ -139,9 +140,13 @@ def frequent_paths_ab():
     # 构建响应数据
     response = []
     for path_key, count in top_paths:
+        path=path_samples[path_key]
         response.append({
-            "count": count,
-            "trail": path_samples[path_key]
+            "path":[[
+                p['lat'],
+                p['lng'],
+                datetime.datetime.strptime(p['time'],"%Y-%m-%d %H:%M:%S").timestamp()
+            ] for p in path]
         })
 
     # 返回JSON响应

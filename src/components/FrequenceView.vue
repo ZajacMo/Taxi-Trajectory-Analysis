@@ -2,10 +2,9 @@
   <div class="frequency-search-form">
     <div class="position-input" v-show="selected.radio === '单区域'">
       最小距离
-      <el-input
-        v-model="form.minDistance"
-        placeholder="请输入最小距离"
-      ></el-input>
+      <el-input v-model="form.minDistance" placeholder="请输入最小距离"
+        ><template slot="append">千米</template>
+      </el-input>
     </div>
     <div class="position-input">
       路径数
@@ -55,15 +54,22 @@ export default {
 </script>
 
 <style scoped>
-div.el-input {
-  width: 70%;
-  margin: auto;
-  display: block;
-}
 div.position-input {
+  div.el-input {
+    width: 70%;
+    margin-left: auto;
+    /* display: block; */
+  }
+
+  div.el-input-number {
+    width: 70%;
+    margin-left: auto;
+    display: block;
+  }
+  margin-top: 10px;
   display: inline-flex;
   align-items: center;
-  width: 50%;
+  width: 100%;
 }
 .frequency-search-form {
   padding: 0px;
