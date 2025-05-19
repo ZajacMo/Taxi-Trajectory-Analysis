@@ -4,19 +4,24 @@
 
 <script>
 import * as echarts from "echarts/core";
-import { FunnelChart } from "echarts/charts";
+import { LineChart } from "echarts/charts";
 import { TitleComponent, TooltipComponent } from "echarts/components";
 import { CanvasRenderer } from "echarts/renderers";
-import { LegendComponent, ToolboxComponent } from "echarts/components";
+import {
+  LegendComponent,
+  ToolboxComponent,
+  GridComponent,
+} from "echarts/components";
 
 // 注册必须的组件
 echarts.use([
   TitleComponent,
   TooltipComponent,
-  FunnelChart,
+  LineChart,
   CanvasRenderer,
   LegendComponent,
   ToolboxComponent,
+  GridComponent,
 ]);
 
 export default {
@@ -34,11 +39,18 @@ export default {
         const end = String(index + 1).padStart(2, "0");
         return `${start}:00-${end}:00`;
       }),
+      propNames: [
+        ["流出该区域", "流出入区域"],
+        ["区域1流向区域2", "区域2流向区域1"],
+      ],
     };
   },
   computed: {
     flowData() {
-      return this.$store.state.echart.data;
+      var lists = this.$store.state.echart.data;
+      var flowIN = lists.map((item) => item.flowIn);
+      var flowOUT = lists.map((item) => item.flowOut);
+      return [flowIN, flowOUT];
     },
   },
   mounted() {
@@ -50,63 +62,103 @@ export default {
       const option = {
         title: {
           text: `${this.mode}关联分析图`,
-          subtext: "Fake Data",
           left: "center",
-          top: "top",
+          top: "0",
         },
         tooltip: {
-          trigger: "item",
-          formatter: "{a} <br/>{b} : {c}%",
-        },
-        toolbox: {
-          show: true,
-          orient: "vertical",
-          top: "center",
-          feature: {
-            dataView: { readOnly: false },
-            restore: {},
-            saveAsImage: {},
+          trigger: "axis",
+          axisPointer: {
+            animation: false,
           },
         },
         legend: {
-          orient: "vertical",
-          left: "left",
-          data: this.label,
+          data: this.propNames[this.mode === "单区域" ? 0 : 1],
+          left: "center",
+          top: "bottom",
         },
-        series: [
+        toolbox: {
+          feature: {
+            saveAsImage: {
+              show: true,
+              name: "image",
+              title: "保存为图片",
+            },
+          },
+        },
+        axisPointer: {
+          link: [
+            {
+              xAxisIndex: "all",
+            },
+          ],
+        },
+        grid: [
           {
-            name: "Funnel",
-            type: "funnel",
-            width: "40%",
-            height: "90%",
-            left: "5%",
-            top: "10%",
-            sort: "none",
-            funnelAlign: "right",
-            data: [
-              { value: 60, name: "Prod C" },
-              { value: 30, name: "Prod D" },
-              { value: 80, name: "Prod B" },
-              { value: 10, name: "Prod E" },
-              { value: 100, name: "Prod A" },
-            ],
+            left: 60,
+            right: 50,
+            height: "35%",
           },
           {
-            name: "Pyramid",
-            type: "funnel",
-            width: "40%",
-            height: "90%",
-            left: "55%",
-            top: "10%",
-            sort: "none",
-            funnelAlign: "left",
-            data: [
-              { value: 60, name: "Prod C" },
-              { value: 30, name: "Prod D" },
-              { value: 10, name: "Prod E" },
-              { value: 80, name: "Prod B" },
-              { value: 100, name: "Prod A" },
-            ],
+            left: 60,
+            right: 50,
+            top: "55%",
+            height: "35%",
+          },
+        ],
+        xAxis: [
+          {
+            type: "category",
+            boundaryGap: false,
+            axisLine: { onZero: true },
+            axisPointer: {
+              snap: true,
+              label: {
+                show: true,
+                backgroundColor: "#6a7985",
+              },
+            },
+            data: this.label,
+          },
+          {
+            gridIndex: 1,
+            type: "category",
+            boundaryGap: false,
+            axisLine: { onZero: true },
+            show: false,
+            // data: timeData,
+            data: this.label,
+            position: "top",
+          },
+        ],
+        yAxis: [
+          {
+            name: "车流量(辆)",
+            type: "value",
+            // max: 500,
+          },
+          {
+            gridIndex: 1,
+            name: "车流量(辆)",
+            type: "value",
+            inverse: true,
+          },
+        ],
+        series: [
+          {
+            name: this.propNames[this.mode === "单区域" ? 0 : 1][0],
+            type: "line",
+            symbolSize: 8,
+            // prettier-ignore
+            data: this.flowData[0],
+          },
+          {
+            name: this.propNames[this.mode === "单区域" ? 0 : 1][1],
+            type: "line",
+            xAxisIndex: 1,
+            yAxisIndex: 1,
+            symbolSize: 8,
+            // prettier-ignore
+            data: this.flowData[1],
           },
         ],
       };

@@ -141,7 +141,7 @@ export default {
   },
   data() {
     return {
-      echartVisible: true,
+      echartVisible: false,
       selected: {
         radio: "单区域",
         mode: "区域范围查找",
@@ -156,10 +156,6 @@ export default {
         area2: null,
         startTime: null,
       },
-      // statistics: {
-      //   taxiCount: "请选择",
-      //   trafficTime: "00小时00分钟",
-      // },
       options: {
         pickerOptions: {
           shortcuts: [
@@ -190,7 +186,7 @@ export default {
     },
     deep: true,
     // 监听 state.echartVisible 变化
-    storeEchartisible() {
+    storeEchartVisible() {
       this.echartVisible = true;
     },
   },
