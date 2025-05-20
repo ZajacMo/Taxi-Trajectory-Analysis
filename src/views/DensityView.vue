@@ -55,7 +55,7 @@ export default {
       this.form.endTime = "";
     },
     confirmForm() {
-      if (!this.form.r || !this.form.startTime || !this.form.endTime) {
+      if (!this.form.r || !this.form.startTime) {
         this.$message.error("请填写完整的参数");
         return;
       }

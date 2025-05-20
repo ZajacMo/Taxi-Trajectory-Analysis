@@ -252,8 +252,14 @@ export default new Vuex.Store({
               dateRange[1].toISOString().split("T")[0] +
               " " +
               dateRange[1].toTimeString().split(" ")[0],
-            ltPoint: [area.nw.point.lng, area.nw.point.lat],
-            rbPoint: [area.se.point.lng, area.se.point.lat],
+            ltPoint: [
+              parseFloat(area.nw.point.lng),
+              parseFloat(area.nw.point.lat),
+            ],
+            rbPoint: [
+              parseFloat(area.se.point.lng),
+              parseFloat(area.se.point.lat),
+            ],
           }),
         });
         var data = await response.json();
