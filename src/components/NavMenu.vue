@@ -97,12 +97,12 @@ export default {
       var simplify = false;
       if (this.selectedOptions.length === 0) {
         this.selectedOptions = "all";
-        simplify = true;
+        // simplify = true;
       }
       this.$store.dispatch("fetchTrails", {
         taxi_ids: this.selectedOptions,
         simplify: simplify,
-        // tolerance: 0.001,
+        tolerance: 0.0001,
       });
     },
     // 定义防抖后的远程方法

@@ -184,6 +184,7 @@ export default new Vuex.Store({
       commit("SET_TRAILS", { loading: true, options: taxi_ids });
       // console.log("正在发送路线数据...");
       try {
+        // console.log(taxi_ids == "all");
         // 确保 axios 实例已正确导入和配置
         const response = await fetch("/api/trails/data", {
           method: "POST",
@@ -191,11 +192,19 @@ export default new Vuex.Store({
             "Content-Type": "application/json",
             Accept: "application/json",
           },
-          body: JSON.stringify({
-            taxi_ids: taxi_ids,
-            simplify: simplify,
-            tolerance: tolerance,
-          }),
+          body:
+            taxi_ids === "all"
+              ? JSON.stringify({
+                  taxi_ids: "all",
+                  sample_count: 100,
+                  simplify: simplify,
+                  tolerance: tolerance,
+                })
+              : JSON.stringify({
+                  taxi_ids: taxi_ids,
+                  simplify: simplify,
+                  tolerance: tolerance,
+                }),
         });
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

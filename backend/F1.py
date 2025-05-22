@@ -199,6 +199,7 @@ def get_trails_post():
     """
     try:
         req = request.get_json(force=True)
+        print(req)
     except Exception:
         return jsonify({"error": "Invalid JSON body"}), 400
 
